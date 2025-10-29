@@ -190,7 +190,9 @@ napi_value IntellVoiceManagerNapi::Export(napi_env env, napi_value exports)
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION("getCapabilityInfo", GetCapabilityInfo),
         DECLARE_NAPI_FUNCTION("on", On),
+        DECLARE_NAPI_FUNCTION("onServiceChange", OnServiceChange),
         DECLARE_NAPI_FUNCTION("off", Off),
+        DECLARE_NAPI_FUNCTION("offServiceChange", OffServiceChange),
     };
 
     napi_property_descriptor staticProperties[] = {
@@ -287,6 +289,34 @@ napi_value IntellVoiceManagerNapi::On(napi_env env, napi_callback_info info)
     return RegisterCallback(env, jsThis, args);
 }
 
+napi_value IntellVoiceManagerNapi::OnServiceChange(napi_env env, napi_callback_info info)
+{
+    INTELL_VOICE_LOG_INFO("enter");
+
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+
+    const size_t expectArgCount = ARGC_ONE;
+    size_t argCount = ARGC_ONE;
+    napi_value args[expectArgCount] = { nullptr };
+    napi_value jsThis = nullptr;
+
+    napi_status status = napi_get_cb_info(env, info, &argCount, args, &jsThis, nullptr);
+    if (status != napi_ok || argCount != expectArgCount) {
+        INTELL_VOICE_LOG_ERROR("failed to get parameters");
+        return undefinedResult;
+    }
+
+    napi_valuetype handler = napi_undefined;
+    if (napi_typeof(env, args[ARG_INDEX_0], &handler) != napi_ok || handler != napi_function) {
+        INTELL_VOICE_LOG_ERROR("callback handler type mismatch");
+        return undefinedResult;
+    }
+    napi_value args1[ARGC_TWO] = { nullptr, args[ARG_INDEX_0] };
+
+    return RegisterCallback(env, jsThis, args1);
+}
+
 napi_value IntellVoiceManagerNapi::RegisterCallback(napi_env env, napi_value jsThis, napi_value *args)
 {
     INTELL_VOICE_LOG_INFO("enter");
@@ -347,6 +377,26 @@ napi_value IntellVoiceManagerNapi::Off(napi_env env, napi_callback_info info)
     INTELL_VOICE_LOG_INFO("callbackName: %{public}s", callbackName.c_str());
     if (callbackName != SERVICE_CHANGE_CALLBACK_NAME) {
         INTELL_VOICE_LOG_ERROR("No such off callback supported");
+        return undefinedResult;
+    }
+
+    return DeregisterCallback(env, jsThis);
+}
+
+napi_value IntellVoiceManagerNapi::OffServiceChange(napi_env env, napi_callback_info info)
+{
+    INTELL_VOICE_LOG_INFO("enter");
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+
+    const size_t expectArgCount = ARGC_ONE;
+    size_t argCount = ARGC_ONE;
+    napi_value args[expectArgCount] = {0};
+    napi_value jsThis = nullptr;
+
+    napi_status status = napi_get_cb_info(env, info, &argCount, args, &jsThis, nullptr);
+    if (status != napi_ok || argCount > ARGC_ONE) {
+        INTELL_VOICE_LOG_ERROR("failed to get parameters");
         return undefinedResult;
     }
 
