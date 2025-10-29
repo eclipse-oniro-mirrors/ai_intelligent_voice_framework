@@ -70,7 +70,9 @@ napi_value WakeupIntellVoiceEngineNapi::Export(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getParameter", GetParameter),
         DECLARE_NAPI_FUNCTION("release", Release),
         DECLARE_NAPI_FUNCTION("on", On),
+        DECLARE_NAPI_FUNCTION("onWakeupIntelligentVoiceEvent", OnWakeupIntelligentVoiceEvent),
         DECLARE_NAPI_FUNCTION("off", Off),
+        DECLARE_NAPI_FUNCTION("offWakeupIntelligentVoiceEvent", OffWakeupIntelligentVoiceEvent),
         DECLARE_NAPI_FUNCTION("startCapturer", StartCapturer),
         DECLARE_NAPI_FUNCTION("read", Read),
         DECLARE_NAPI_FUNCTION("stopCapturer", StopCapturer),
@@ -486,6 +488,35 @@ napi_value WakeupIntellVoiceEngineNapi::On(napi_env env, napi_callback_info info
     return RegisterCallback(env, jsThis, args);
 }
 
+napi_value WakeupIntellVoiceEngineNapi::OnWakeupIntelligentVoiceEvent(napi_env env, napi_callback_info info)
+{
+    INTELL_VOICE_LOG_INFO("enter");
+
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+
+    size_t argCount = ARGC_ONE;
+    napi_value args[ARGC_ONE] = { nullptr };
+    napi_value jsThis = nullptr;
+
+    napi_status status = napi_get_cb_info(env, info, &argCount, args, &jsThis, nullptr);
+    if (status != napi_ok || argCount != ARGC_ONE) {
+        INTELL_VOICE_LOG_ERROR("failed to get parameters");
+        IntellVoiceCommonNapi::ThrowError(env, NAPI_INTELLIGENT_VOICE_INVALID_PARAM);
+        return undefinedResult;
+    }
+
+    napi_valuetype handler = napi_undefined;
+    if (napi_typeof(env, args[ARG_INDEX_0], &handler) != napi_ok || handler != napi_function) {
+        INTELL_VOICE_LOG_ERROR("callback handler type mismatch");
+        IntellVoiceCommonNapi::ThrowError(env, NAPI_INTELLIGENT_VOICE_INVALID_PARAM);
+        return undefinedResult;
+    }
+    napi_value args1[ARGC_TWO] = { nullptr, args[ARG_INDEX_0] };
+
+    return RegisterCallback(env, jsThis, args1);
+}
+
 napi_value WakeupIntellVoiceEngineNapi::RegisterCallback(napi_env env, napi_value jsThis, napi_value *args)
 {
     INTELL_VOICE_LOG_INFO("enter");
@@ -561,6 +592,35 @@ napi_value WakeupIntellVoiceEngineNapi::Off(napi_env env, napi_callback_info inf
     }
 
     return UnregisterCallback(env, jsThis, callbackName, args[ARG_INDEX_1]);
+}
+
+napi_value WakeupIntellVoiceEngineNapi::OffWakeupIntelligentVoiceEvent(napi_env env, napi_callback_info info)
+{
+    INTELL_VOICE_LOG_INFO("enter");
+
+    napi_value undefinedResult = nullptr;
+    napi_get_undefined(env, &undefinedResult);
+
+    const size_t maxArgCount = ARGC_ONE;
+    size_t argCount = ARGC_ONE;
+    napi_value args[ARGC_ONE] = { nullptr };
+    napi_value jsThis = nullptr;
+
+    napi_status status = napi_get_cb_info(env, info, &argCount, args, &jsThis, nullptr);
+    if (status != napi_ok || argCount > maxArgCount) {
+        INTELL_VOICE_LOG_ERROR("failed to get parameters");
+        return undefinedResult;
+    }
+
+    if (argCount == ARGC_ONE) {
+        napi_valuetype secondArgType = napi_undefined;
+        if (napi_typeof(env, args[ARG_INDEX_0], &secondArgType) != napi_ok || secondArgType != napi_function) {
+            INTELL_VOICE_LOG_ERROR("failed to get callback function instance");
+            return undefinedResult;
+        }
+    }
+
+    return UnregisterCallback(env, jsThis, INTELL_VOICE_EVENT_CALLBACK_NAME, args[ARG_INDEX_0]);
 }
 
 napi_value WakeupIntellVoiceEngineNapi::UnregisterCallback(napi_env env, napi_value jsThis,

@@ -44,7 +44,9 @@ private:
     static napi_value GetParameter(napi_env env, napi_callback_info info);
     static napi_value Release(napi_env env, napi_callback_info info);
     static napi_value On(napi_env env, napi_callback_info info);
+    static napi_value OnWakeupIntelligentVoiceEvent(napi_env env, napi_callback_info info);
     static napi_value Off(napi_env env, napi_callback_info info);
+    static napi_value OffWakeupIntelligentVoiceEvent(napi_env env, napi_callback_info info);
     static napi_value StartCapturer(napi_env env, napi_callback_info info);
     static napi_value Read(napi_env env, napi_callback_info info);
     static napi_value StopCapturer(napi_env env, napi_callback_info info);
