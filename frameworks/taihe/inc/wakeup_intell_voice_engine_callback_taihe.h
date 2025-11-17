@@ -13,18 +13,23 @@
  * limitations under the License.
  */
 
-#ifndef ENROLL_INTELL_VOICE_ENGINE_CALLBACK_TAIHE_H
-#define ENROLL_INTELL_VOICE_ENGINE_CALLBACK_TAIHE_H
+#ifndef WAKEUP_INTELL_VOICE_ENGINE_CALLBACK_TAIHE_H
+#define WAKEUP_INTELL_VOICE_ENGINE_CALLBACK_TAIHE_H
 
 #include <queue>
 #include <map>
 #include <uv.h>
 #include "i_intell_voice_engine_callback.h"
+#include "ohos.ai.intelligentVoice.proj.hpp"
+#include "ohos.ai.intelligentVoice.impl.hpp"
+#include "taihe/runtime.hpp"
+#include "stdexcept"
 
 namespace OHOS {
 namespace IntellVoiceTaihe {
 using OHOS::IntellVoiceEngine::IIntellVoiceEngineEventCallback;
 using OHOS::IntellVoiceEngine::IntellVoiceEngineCallBackEvent;
+
 
 struct EnrollCallbackInfo {
     int32_t eventId;
@@ -33,14 +38,22 @@ struct EnrollCallbackInfo {
 };
 
 
-class EnrollIntellVoiceEngineCallbackTaihe : public IIntellVoiceEngineEventCallback {
+class WakeupIntellVoiceEngineCallbackTaihe : public IIntellVoiceEngineEventCallback {
 public:
-    explicit EnrollIntellVoiceEngineCallbackTaihe();
-    virtual ~EnrollIntellVoiceEngineCallbackTaihe();
+    explicit WakeupIntellVoiceEngineCallbackTaihe(std::shared_ptr<
+        ::taihe::callback_view<void(::ohos::ai::intelligentVoice::WakeupIntelligentVoiceEngineCallbackInfo const &)>
+        > callback);
+    virtual ~WakeupIntellVoiceEngineCallbackTaihe();
 
+    void ClearCallbackRef();
     void OnEvent(const IntellVoiceEngineCallBackEvent &event) override;
 
+private:
+    std::mutex mutex_;
+    std::shared_ptr<::taihe::callback_view<
+        void(::ohos::ai::intelligentVoice::WakeupIntelligentVoiceEngineCallbackInfo const &)>> callback_;
 };
+
 }  // namespace IntellVoiceNapi
 }  // namespace OHOS
 #endif

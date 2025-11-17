@@ -13,10 +13,10 @@
  * limitations under the License.
  */
 
-@!namespace("@ohos.ai.intelligentVoice", "basicServicesKit")
+@!namespace("@ohos.ai.intelligentVoice", "intelligentVoice")
 
 @!sts_inject("""
-static { loadLibrary("intelligentVoice_taihe.z"); }
+static { loadLibrary("intellVoice_taihe.z"); }
 """)
 
 @overload("getIntelligentVoiceManager")
@@ -37,7 +37,7 @@ interface WakeupManager {
   SetParameterSync(key: String, value: String): void;
 
   @gen_promise("getParameter")
-  GetParameterSync(key: String): void;
+  GetParameterSync(key: String): String;
 
   @gen_promise("getUploadFiles")
   GetUploadFilesSync(maxCount: i32): Array<UploadFile>;

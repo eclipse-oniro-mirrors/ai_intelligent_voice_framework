@@ -142,17 +142,24 @@ void WakeupIntelligentVoiceEngineImpl::ReleaseSync()
 }
 
 void WakeupIntelligentVoiceEngineImpl::onWakeupIntelligentVoiceEvent(
-    ::taihe::callback_view<void(::ohos::ai::intelligentVoice::WakeupIntelligentVoiceEngineCallbackInfo const &)>
+    callback_view<void(::ohos::ai::intelligentVoice::WakeupIntelligentVoiceEngineCallbackInfo const &)>
         callback)
 {
-    TH_THROW(std::runtime_error, "onWakeupIntelligentVoiceEvent not implemented");
+    auto callbackRef = std::make_shared<callback_view<void(::ohos::ai::intelligentVoice::WakeupIntelligentVoiceEngineCallbackInfo const &)>>(callback);
+    callback_ = std::make_shared<WakeupIntellVoiceEngineCallbackTaihe>(callbackRef);
+    if (engine_ == nullptr) {
+        INTELL_VOICE_LOG_ERROR("engine is nullptr");
+        return;
+    }
+    engine_->SetCallback(callback_);
 }
 
 void WakeupIntelligentVoiceEngineImpl::offWakeupIntelligentVoiceEvent(::taihe::optional_view<
     ::taihe::callback<void(::ohos::ai::intelligentVoice::WakeupIntelligentVoiceEngineCallbackInfo const &)>>
         callback)
 {
-    TH_THROW(std::runtime_error, "offWakeupIntelligentVoiceEvent not implemented");
+    (void)callback;
+    callback_->ClearCallbackRef();
 }
 
 WakeupIntelligentVoiceEngine CreateWakeupIntelligentVoiceEngineSync(

@@ -33,7 +33,7 @@ public:
 
     void SetParameterSync(::taihe::string_view key, ::taihe::string_view value);
 
-    void GetParameterSync(::taihe::string_view key);
+    ::taihe::string GetParameterSync(::taihe::string_view key);
 
     ::taihe::array<::ohos::ai::intelligentVoice::UploadFile> GetUploadFilesSync(int32_t maxCount);
 
