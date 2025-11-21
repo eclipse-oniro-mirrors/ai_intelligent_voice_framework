@@ -32,8 +32,6 @@ ohos_taihe("run_taihe") {
   outputs = [
     "$taihe_generated_file_path/src/ohos.ai.intelligentVoice.ani.cpp",
     "$taihe_generated_file_path/src/ohos.ai.intelligentVoice.abi.c",
-    "$taihe_generated_file_path/src/ohos.ai.intelligentVoice.context.ani.cpp",
-    "$taihe_generated_file_path/src/ohos.ai.intelligentVoice.context.abi.c",
   ]
 }
 

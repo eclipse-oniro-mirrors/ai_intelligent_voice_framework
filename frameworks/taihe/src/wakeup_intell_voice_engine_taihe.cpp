@@ -145,7 +145,8 @@ void WakeupIntelligentVoiceEngineImpl::onWakeupIntelligentVoiceEvent(
     callback_view<void(::ohos::ai::intelligentVoice::WakeupIntelligentVoiceEngineCallbackInfo const &)>
         callback)
 {
-    auto callbackRef = std::make_shared<callback_view<void(::ohos::ai::intelligentVoice::WakeupIntelligentVoiceEngineCallbackInfo const &)>>(callback);
+    auto callbackRef = std::make_shared<callback_view<
+        void(::ohos::ai::intelligentVoice::WakeupIntelligentVoiceEngineCallbackInfo const &)>>(callback);
     callback_ = std::make_shared<WakeupIntellVoiceEngineCallbackTaihe>(callbackRef);
     if (engine_ == nullptr) {
         INTELL_VOICE_LOG_ERROR("engine is nullptr");

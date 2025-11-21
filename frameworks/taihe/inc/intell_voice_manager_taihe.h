@@ -48,8 +48,7 @@ private:
     std::mutex mutex_;
     IntellVoiceManager *manager_ = nullptr;
     sptr<IntellVoiceManagerCallbackTaihe> serviceChangeCb_ = nullptr;
-
 };
-}  // namespace IntellVoiceNapi
+}  // namespace IntellVoiceTaihe
 }  // namespace OHOS
 #endif

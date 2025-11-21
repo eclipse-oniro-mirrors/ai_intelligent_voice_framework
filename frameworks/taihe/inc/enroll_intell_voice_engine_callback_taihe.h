@@ -39,8 +39,7 @@ public:
     virtual ~EnrollIntellVoiceEngineCallbackTaihe();
 
     void OnEvent(const IntellVoiceEngineCallBackEvent &event) override;
-
 };
-}  // namespace IntellVoiceNapi
+}  // namespace IntellVoiceTaihe
 }  // namespace OHOS
 #endif

@@ -31,7 +31,8 @@ namespace OHOS {
 namespace IntellVoiceTaihe {
 WakeupIntellVoiceEngineCallbackTaihe::WakeupIntellVoiceEngineCallbackTaihe(
     std::shared_ptr<::taihe::callback_view<
-    void(::ohos::ai::intelligentVoice::WakeupIntelligentVoiceEngineCallbackInfo const &)>> callback): callback_(callback)
+    void(::ohos::ai::intelligentVoice::WakeupIntelligentVoiceEngineCallbackInfo const &)>> callback)
+    : callback_(callback)
 {
 }
 
@@ -48,7 +49,8 @@ void WakeupIntellVoiceEngineCallbackTaihe::OnEvent(const IntellVoiceEngineCallBa
 {
     std::lock_guard<std::mutex> lock(mutex_);
     INTELL_VOICE_LOG_INFO("enter");
-    WakeupIntelligentVoiceEventType::key_t eventId = WakeupIntelligentVoiceEventType::key_t::INTELLIGENT_VOICE_EVENT_WAKEUP_NONE;
+    WakeupIntelligentVoiceEventType::key_t eventId
+        = WakeupIntelligentVoiceEventType::key_t::INTELLIGENT_VOICE_EVENT_WAKEUP_NONE;
     if (event.msgId == OHOS::HDI::IntelligentVoice::Engine::V1_0::INTELL_VOICE_ENGINE_MSG_RECOGNIZE_COMPLETE) {
         eventId = WakeupIntelligentVoiceEventType::key_t::INTELLIGENT_VOICE_EVENT_RECOGNIZE_COMPLETE;
     } else if (event.msgId == static_cast<OHOS::HDI::IntelligentVoice::Engine::V1_0::IntellVoiceEngineMessageType>(
@@ -67,5 +69,5 @@ void WakeupIntellVoiceEngineCallbackTaihe::OnEvent(const IntellVoiceEngineCallBa
     }
 }
 
-}  // namespace IntellVoiceNapi
+}  // namespace IntellVoiceTaihe
 }  // namespace OHOS

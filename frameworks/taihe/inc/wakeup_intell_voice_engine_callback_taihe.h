@@ -54,6 +54,6 @@ private:
         void(::ohos::ai::intelligentVoice::WakeupIntelligentVoiceEngineCallbackInfo const &)>> callback_;
 };
 
-}  // namespace IntellVoiceNapi
+}  // namespace IntellVoiceTaihe
 }  // namespace OHOS
 #endif

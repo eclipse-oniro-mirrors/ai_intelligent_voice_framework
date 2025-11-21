@@ -37,8 +37,7 @@ public:
 private:
     std::mutex mutex_;
     std::shared_ptr<callback_view<void(ServiceChangeType)>> callback_ = nullptr;
-
 };
-}  // namespace IntellVoiceNapi
+}  // namespace IntellVoiceTaihe
 }  // namespace OHOS
 #endif

@@ -45,19 +45,21 @@ IntelligentVoiceManagerImpl::~IntelligentVoiceManagerImpl()
 ::taihe::array<IntelligentVoiceEngineType> IntelligentVoiceManagerImpl::getCapabilityInfo()
 {
     INTELL_VOICE_LOG_INFO("enter");
-    ohos::ai::intelligentVoice::IntelligentVoiceEngineType enroll(ohos::ai::intelligentVoice::IntelligentVoiceEngineType::key_t::ENROLL_ENGINE_TYPE);
-    ohos::ai::intelligentVoice::IntelligentVoiceEngineType wakeup(ohos::ai::intelligentVoice::IntelligentVoiceEngineType::key_t::WAKEUP_ENGINE_TYPE);
+    ohos::ai::intelligentVoice::IntelligentVoiceEngineType enroll(
+        ohos::ai::intelligentVoice::IntelligentVoiceEngineType::key_t::ENROLL_ENGINE_TYPE);
+    ohos::ai::intelligentVoice::IntelligentVoiceEngineType wakeup(
+        ohos::ai::intelligentVoice::IntelligentVoiceEngineType::key_t::WAKEUP_ENGINE_TYPE);
     return {enroll, wakeup};
 }
 
 void IntelligentVoiceManagerImpl::onServiceChange(callback_view<void(ServiceChangeType)> callback)
 {
-    
     if (manager_ != nullptr) {
         if (serviceChangeCb_ != nullptr) {
             manager_->DeregisterServiceDeathRecipient(serviceChangeCb_);
         }
-        serviceChangeCb_ = new (std::nothrow) IntellVoiceManagerCallbackTaihe(std::make_shared<callback_view<void(ServiceChangeType)>>(callback));
+        serviceChangeCb_ = new (std::nothrow) IntellVoiceManagerCallbackTaihe(
+            std::make_shared<callback_view<void(ServiceChangeType)>>(callback));
         manager_->RegisterServiceDeathRecipient(serviceChangeCb_);
     }
 }
