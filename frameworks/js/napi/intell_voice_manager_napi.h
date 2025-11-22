@@ -42,7 +42,9 @@ private:
 
     static napi_value GetCapabilityInfo(napi_env env, napi_callback_info info);
     static napi_value On(napi_env env, napi_callback_info info);
+    static napi_value OnServiceChange(napi_env env, napi_callback_info info);
     static napi_value Off(napi_env env, napi_callback_info info);
+    static napi_value OffServiceChange(napi_env env, napi_callback_info info);
 
     static napi_value GetIntelligentVoiceManager(napi_env env, napi_callback_info info);
     static napi_value GetIntelligentVoiceManagerWrapper(napi_env env);

@@ -1,0 +1,286 @@
+/*
+ * Copyright (C) 2025 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@!namespace("@ohos.ai.intelligentVoice", "intelligentVoice")
+
+@!sts_inject("""
+static { loadLibrary("intellVoice_taihe.z"); }
+""")
+
+@overload("getIntelligentVoiceManager")
+function GetIntelligentVoiceManager(): IntelligentVoiceManager;
+
+interface IntelligentVoiceManager {
+  getCapabilityInfo(): Array<IntelligentVoiceEngineType>;
+
+  @on_off("serviceChange")
+  onServiceChange(callback: (data: ServiceChangeType) => void): void;
+
+  @on_off("serviceChange")
+  offServiceChange(callback: Optional<(data: ServiceChangeType) => void>): void;
+}
+
+interface WakeupManager {
+  @gen_promise("setParameter")
+  SetParameterSync(key: String, value: String): void;
+
+  @gen_promise("getParameter")
+  GetParameterSync(key: String): String;
+
+  @gen_promise("getUploadFiles")
+  GetUploadFilesSync(maxCount: i32): Array<UploadFile>;
+
+  @gen_promise("getWakeupSourceFiles")
+  GetWakeupSourceFilesSync(): Array<WakeupSourceFile>;
+
+  @gen_promise("enrollWithWakeupFilesForResult")
+  EnrollWithWakeupFilesForResultSync(wakeupFiles: Array<WakeupSourceFile>, wakeupInfo: String): EnrollResult;
+
+  @gen_promise("clearUserData")
+  ClearUserDataSync(): void;
+}
+
+enum UploadFileType: i32 {
+  ENROLL_FILE = 0,
+  WAKEUP_FILE = 1,
+}
+
+struct UploadFile {
+    type: UploadFileType;
+    filesDescription: String;
+    filesContent: Array<@arraybuffer Array<u8>>;
+}
+
+struct WakeupSourceFile {
+    filePath: String;
+    fileContent: @arraybuffer Array<u8>;
+}
+
+enum ServiceChangeType: i32 {
+  SERVICE_UNAVAILABLE = 0,
+}
+
+enum IntelligentVoiceEngineType: i32 {
+  ENROLL_ENGINE_TYPE = 0,
+  WAKEUP_ENGINE_TYPE = 1,
+  UPDATE_ENGINE_TYPE = 2,
+}
+
+struct EnrollIntelligentVoiceEngineDescriptor {
+    wakeupPhrase: String;
+}
+
+struct WakeupIntelligentVoiceEngineDescriptor {
+    needReconfirm: bool;
+    wakeupPhrase: String;
+}
+
+enum EvaluationResultCode: i32 {
+  UNKNOWN = 0,
+  PASS = 1,
+  WORD_EMPTY = 2,
+  CHINESE_ONLY = 3,
+  INVALID_LENGTH = 4,
+  UNUSUAL_WORD = 5,
+  CONSECUTIVE_SAME_WORD = 6,
+  TOO_FEW_PHONEMES = 7,
+  TOO_MANY_PHONEMES = 8,
+  COMMON_INSTRUCTION = 9,
+  COMMON_SPOKEN_LANGUAGE = 10,
+  SENSITIVE_WORD = 11,
+  NO_INITIAL_CONSONANT = 12,
+  REPEATED_PHONEME = 13,
+}
+
+struct EvaluationResult {
+    score: i32;
+    resultCode: EvaluationResultCode;
+}
+
+@overload("getWakeupManager")
+function GetWakeupManager(): WakeupManager;
+
+@gen_async("createEnrollIntelligentVoiceEngine")
+@gen_promise("createEnrollIntelligentVoiceEngine")
+function CreateEnrollIntelligentVoiceEngineSync(descriptor: EnrollIntelligentVoiceEngineDescriptor): EnrollIntelligentVoiceEngine;
+
+@gen_async("createWakeupIntelligentVoiceEngine")
+@gen_promise("createWakeupIntelligentVoiceEngine")
+function CreateWakeupIntelligentVoiceEngineSync(descriptor: WakeupIntelligentVoiceEngineDescriptor): WakeupIntelligentVoiceEngine;
+
+struct EnrollEngineConfig {
+    language: String;
+    region: String;
+}
+
+enum SensibilityType: i32 {
+  LOW_SENSIBILITY = 0,
+  MIDDLE_SENSIBILITY = 1,
+  HIGH_SENSIBILITY = 2,
+}
+
+struct WakeupHapInfo {
+    bundleName: String;
+    abilityName: String;
+}
+
+enum WakeupIntelligentVoiceEventType: i32 {
+  INTELLIGENT_VOICE_EVENT_WAKEUP_NONE = 0,
+  INTELLIGENT_VOICE_EVENT_RECOGNIZE_COMPLETE = 1,
+  INTELLIGENT_VOICE_EVENT_HEADSET_RECOGNIZE_COMPLETE = 2,
+}
+
+enum IntelligentVoiceErrorCode: i32 {
+  INTELLIGENT_VOICE_NO_MEMORY = 22700101,
+  INTELLIGENT_VOICE_INVALID_PARAM = 22700102,
+  INTELLIGENT_VOICE_INIT_FAILED = 22700103,
+  INTELLIGENT_VOICE_COMMIT_ENROLL_FAILED = 22700104,
+  INTELLIGENT_VOICE_START_CAPTURER_FAILED = 22700105,
+  INTELLIGENT_VOICE_READ_FAILED = 22700106,
+  INTELLIGENT_VOICE_SYSTEM_ERROR = 22700107,
+}
+
+enum EnrollResult: i32 {
+  SUCCESS = 0,
+  VPR_TRAIN_FAILED = -1,
+  WAKEUP_PHRASE_NOT_MATCH = -2,
+  TOO_NOISY = -3,
+  TOO_LOUD = -4,
+  INTERVAL_LARGE = -5,
+  DIFFERENT_PERSON = -6,
+  UNKNOWN_ERROR = -100,
+}
+
+enum CapturerChannel: i32 {
+  CAPTURER_CHANNEL_1 = 0x1 << 0,
+  CAPTURER_CHANNEL_2 = 0x1 << 1,
+  CAPTURER_CHANNEL_3 = 0x1 << 2,
+  CAPTURER_CHANNEL_4 = 0x1 << 3,
+}
+
+struct EnrollCallbackInfo {
+  result: EnrollResult;
+  context: String;
+}
+
+struct WakeupIntelligentVoiceEngineCallbackInfo {
+  eventId: WakeupIntelligentVoiceEventType;
+  isSuccess: bool;
+  context: String;
+}
+
+interface EnrollIntelligentVoiceEngine {
+  @gen_async("getSupportedRegions")
+  @gen_promise("getSupportedRegions")
+  GetSupportedRegionsSync(): Array<String>;
+
+  @gen_async("init")
+  @gen_promise("init")
+  InitSync(config: EnrollEngineConfig): void;
+
+  @gen_async("enrollForResult")
+  @gen_promise("enrollForResult")
+  EnrollForResultSync(isLast: bool): EnrollCallbackInfo;
+
+  @gen_async("stop")
+  @gen_promise("stop")
+  StopSync(): void;
+
+  @gen_async("commit")
+  @gen_promise("commit")
+  CommitSync(): void;
+
+  @gen_async("setWakeupHapInfo")
+  @gen_promise("setWakeupHapInfo")
+  SetWakeupHapInfoSync(info: WakeupHapInfo): void;
+
+  @gen_async("setSensibility")
+  @gen_promise("setSensibility")
+  SetSensibilitySync(sensibility: SensibilityType): void;
+
+  @gen_async("setParameter")
+  @gen_promise("setParameter")
+  SetParameterSync(key: String, value: String): void;
+
+  @gen_async("getParameter")
+  @gen_promise("getParameter")
+  GetParameterSync(key: String): void;
+
+  @gen_promise("evaluateForResult")
+  EvaluateForResultSync(word: String): EvaluationResult;
+
+  @gen_async("release")
+  @gen_promise("release")
+  ReleaseSync(): void;
+}
+
+
+interface WakeupIntelligentVoiceEngine {
+
+  @gen_async("getSupportedRegions")
+  @gen_promise("getSupportedRegions")
+  GetSupportedRegionsSync(): Array<String>;
+
+  @gen_async("setWakeupHapInfo")
+  @gen_promise("setWakeupHapInfo")
+  SetWakeupHapInfoSync(info: WakeupHapInfo): void;
+
+  @gen_async("setSensibility")
+  @gen_promise("setSensibility")
+  SetSensibilitySync(sensibility: SensibilityType): void;
+
+  @gen_async("setParameter")
+  @gen_promise("setParameter")
+  SetParameterSync(key: String, value: String): void;
+
+  @gen_async("getParameter")
+  @gen_promise("getParameter")
+  GetParameterSync(key: String): void;
+
+  @gen_promise("getPcm")
+  GetPcmSync(): @arraybuffer Array<u8>;
+
+  @gen_promise("startCapturer")
+  StartCapturerSync(channels: i32): void;
+
+  @gen_promise("read")
+  ReadSync(): @arraybuffer Array<u8>;
+
+  @gen_promise("stopCapturer")
+  StopCapturerSync(): void;
+
+  @gen_async("release")
+  @gen_promise("release")
+  ReleaseSync(): void;
+
+  @on_off("wakeupIntelligentVoiceEvent")
+  onWakeupIntelligentVoiceEvent(callback: (data: WakeupIntelligentVoiceEngineCallbackInfo) => void): void;
+
+  @on_off("wakeupIntelligentVoiceEvent")
+  offWakeupIntelligentVoiceEvent(callback: Optional<(data: WakeupIntelligentVoiceEngineCallbackInfo) => void>): void;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
