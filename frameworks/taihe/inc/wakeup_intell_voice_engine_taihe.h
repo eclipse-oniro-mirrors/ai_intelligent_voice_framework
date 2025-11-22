@@ -17,6 +17,7 @@
 
 #include "intell_voice_manager.h"
 #include "wakeup_intell_voice_engine.h"
+#include "wakeup_intell_voice_engine_callback_taihe.h"
 
 #include "ohos.ai.intelligentVoice.proj.hpp"
 #include "ohos.ai.intelligentVoice.impl.hpp"
@@ -62,6 +63,7 @@ public:
 
 private:
     std::shared_ptr<IntellVoice::WakeupIntellVoiceEngine> engine_ = nullptr;
+    std::shared_ptr<WakeupIntellVoiceEngineCallbackTaihe> callback_ = nullptr;
     IntellVoice::WakeupIntelligentVoiceEngineDescriptor descriptor_;
 };
 

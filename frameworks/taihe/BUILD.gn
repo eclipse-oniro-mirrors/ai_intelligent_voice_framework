@@ -56,7 +56,9 @@ taihe_shared_library("intellVoice_taihe") {
     "src/enroll_intell_voice_engine_taihe.cpp",
     "src/wakeup_intell_voice_engine_taihe.cpp",
     "src/intellvoice_taihe_utils.cpp",
+    "src/intell_voice_manager_callback_taihe.cpp",
     "src/enroll_intell_voice_engine_callback_taihe.cpp",
+    "src/wakeup_intell_voice_engine_callback_taihe.cpp",
     "src/intell_voice_update_callback_taihe.cpp",
   ]
 

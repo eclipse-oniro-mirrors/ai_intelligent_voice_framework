@@ -40,14 +40,14 @@ void WakeupManagerImpl::SetParameterSync(::taihe::string_view key, ::taihe::stri
     manager->SetParameter(std::string(key), std::string(value));
 }
 
-void WakeupManagerImpl::GetParameterSync(::taihe::string_view key)
+::taihe::string WakeupManagerImpl::GetParameterSync(::taihe::string_view key)
 {
     auto manager = IntellVoiceManager::GetInstance();
     if (manager == nullptr) {
         INTELL_VOICE_LOG_ERROR("manager is nullptr");
-        return;
+        return "";
     }
-    manager->GetParameter(std::string(key));
+    return manager->GetParameter(std::string(key));
 }
 
 taihe::array<::ohos::ai::intelligentVoice::UploadFile> WakeupManagerImpl::GetUploadFilesSync(int32_t maxCount)
@@ -72,7 +72,6 @@ taihe::array<::ohos::ai::intelligentVoice::WakeupSourceFile> WakeupManagerImpl::
     }
     manager->GetWakeupSourceFiles(cloneFile);
     return IntellVoiceTaiheUtils::ToTaiheArrayWakeupSourceFile(cloneFile);
-    TH_THROW(std::runtime_error, "GetWakeupSourceFilesSync not implemented");
 }
 
 ::ohos::ai::intelligentVoice::EnrollResult WakeupManagerImpl::EnrollWithWakeupFilesForResultSync(

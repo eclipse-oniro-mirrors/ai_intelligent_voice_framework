@@ -33,6 +33,6 @@ public:
 
     void OnUpdateComplete(const int result) override;
 };
-}  // namespace IntellVoiceNapi
+}  // namespace IntellVoiceTaihe
 }  // namespace OHOS
 #endif

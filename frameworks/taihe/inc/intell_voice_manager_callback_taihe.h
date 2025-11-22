@@ -13,13 +13,10 @@
  * limitations under the License.
  */
 
-#ifndef INTELL_VOICE_MANAGER_TAIHE_H
-#define INTELL_VOICE_MANAGER_TAIHE_H
+#ifndef INTELL_VOICE_MANAGER_CALLBACK_TAIHE_H
+#define INTELL_VOICE_MANAGER_CALLBACK_TAIHE_H
 
-#include "intell_voice_info.h"
-#include "intell_voice_manager.h"
-#include "intell_voice_manager_callback_taihe.h"
-
+#include "iremote_object.h"
 #include "ohos.ai.intelligentVoice.proj.hpp"
 #include "ohos.ai.intelligentVoice.impl.hpp"
 #include "taihe/runtime.hpp"
@@ -28,26 +25,18 @@
 namespace OHOS {
 namespace IntellVoiceTaihe {
 using namespace taihe;
-using OHOS::IntellVoice::IntellVoiceManager;
-using ohos::ai::intelligentVoice::IntelligentVoiceManager;
 using ohos::ai::intelligentVoice::ServiceChangeType;
-using ohos::ai::intelligentVoice::IntelligentVoiceEngineType;
 
-class IntelligentVoiceManagerImpl {
+class IntellVoiceManagerCallbackTaihe : public IRemoteObject::DeathRecipient {
 public:
-    explicit IntelligentVoiceManagerImpl();
-    ~IntelligentVoiceManagerImpl();
+    explicit IntellVoiceManagerCallbackTaihe(std::shared_ptr<callback_view<void(ServiceChangeType)>> callback);
+    ~IntellVoiceManagerCallbackTaihe() override {};
 
-    taihe::array<IntelligentVoiceEngineType> getCapabilityInfo();
-
-    void onServiceChange(callback_view<void(ServiceChangeType)> callback);
-
-    void offServiceChange(optional_view<callback<void(ServiceChangeType)>> callback);
+    void OnRemoteDied(const wptr<IRemoteObject> &remote) override;
 
 private:
     std::mutex mutex_;
-    IntellVoiceManager *manager_ = nullptr;
-    sptr<IntellVoiceManagerCallbackTaihe> serviceChangeCb_ = nullptr;
+    std::shared_ptr<callback_view<void(ServiceChangeType)>> callback_ = nullptr;
 };
 }  // namespace IntellVoiceTaihe
 }  // namespace OHOS
