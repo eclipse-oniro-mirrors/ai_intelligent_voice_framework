@@ -24,7 +24,8 @@ import type { AsyncCallback, Callback } from './@ohos.base';
  * @namespace intelligentVoice
  * @syscap SystemCapability.AI.IntelligentVoice.Core
  * @systemapi
- * @since 10
+ * @since 10 dynamic
+ * @since 22 static
  */
 declare namespace intelligentVoice {
   /**
@@ -36,7 +37,8 @@ declare namespace intelligentVoice {
    * @throws { BusinessError } 22700101 - No memory.
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   function getIntelligentVoiceManager(): IntelligentVoiceManager;
 
@@ -45,7 +47,8 @@ declare namespace intelligentVoice {
    * @typedef IntelligentVoiceManager
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   interface IntelligentVoiceManager {
     /**
@@ -56,7 +59,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     getCapabilityInfo(): Array<IntelligentVoiceEngineType>;
     /**
@@ -69,9 +73,21 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
      */
     on(type: 'serviceChange', callback: Callback<ServiceChangeType>): void;
+    /**
+     * Subscribes service change events. When the state of intelligent voice service changes,
+     * the callback is invoked.
+     * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE
+     * @param { Callback<ServiceChangeType> } callback - Callback is invoked when the event is triggered.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 202 - Not system application.
+     * @syscap SystemCapability.AI.IntelligentVoice.Core
+     * @systemapi
+     * @since 22 static
+     */
+    onServiceChange(callback: Callback<ServiceChangeType>): void;
     /**
      * Unsubscribes service change events.
      * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE
@@ -81,9 +97,20 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
      */
     off(type: 'serviceChange', callback?: Callback<ServiceChangeType>): void;
+    /**
+     * Unsubscribes service change events.
+     * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE
+     * @param { Callback<ServiceChangeType> } [callback] - Callback is invoked when the event is triggered.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 202 - Not system application.
+     * @syscap SystemCapability.AI.IntelligentVoice.Core
+     * @systemapi
+     * @since 22 static
+     */
+    offServiceChange(callback?: Callback<ServiceChangeType>): void;
   }
 
   /**
@@ -91,7 +118,8 @@ declare namespace intelligentVoice {
    * @typedef WakeupManager
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 12
+   * @since 12 dynamic
+   * @since 22 static
    */
   interface WakeupManager {
     /**
@@ -107,7 +135,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700107 - System error.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     setParameter(key: string, value: string): Promise<void>;
     /**
@@ -122,13 +151,14 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700107 - System error.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     getParameter(key: string): Promise<string>;
     /**
      * Obtains files needed to upload. This method uses a promise to return the files needed to upload.
      * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE
-     * @param { number } maxCount - the maximum count of upload files. The maxCount should be greater than 0 and smaller than 101
+     * @param { int } maxCount - the maximum count of upload files. The maxCount should be greater than 0 and smaller than 101
      * @returns { Promise<Array<UploadFile>> } the promise used to return the upload files.
      * @throws { BusinessError } 201 - Permission denied.
      * @throws { BusinessError } 202 - Not system application.
@@ -138,9 +168,10 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700107 - System error.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
-    getUploadFiles (maxCount: number): Promise<Array<UploadFile>>;
+    getUploadFiles (maxCount: int): Promise<Array<UploadFile>>;
     /**
      * Obtains wakeup source files. This method uses a promise to return the wakeup source files.
      * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE
@@ -151,7 +182,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700107 - System error.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     getWakeupSourceFiles(): Promise<Array<WakeupSourceFile>>;
     /**
@@ -168,7 +200,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700107 - System error.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     enrollWithWakeupFilesForResult(wakeupFiles: Array<WakeupSourceFile>, wakeupInfo: string): Promise<EnrollResult>;
     /**
@@ -180,7 +213,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700107 - System error.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     clearUserData(): Promise<void>;
   }
@@ -190,23 +224,26 @@ declare namespace intelligentVoice {
    * @enum {number}
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 12
+   * @since 12 dynamic
+   * @since 22 static
    */
   enum UploadFileType {
     /**
      * Enroll file.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     ENROLL_FILE = 0,
     /**
      * Wakeup file.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
-    WAKEUP_FILE = 1,
+    WAKEUP_FILE = 1
   }
 
   /**
@@ -214,7 +251,8 @@ declare namespace intelligentVoice {
    * @typedef UploadFile
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 12
+   * @since 12 dynamic
+   * @since 22 static
    */
   interface UploadFile {
     /**
@@ -222,7 +260,8 @@ declare namespace intelligentVoice {
      * @type { UploadFileType }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     type: UploadFileType;
     /**
@@ -230,7 +269,8 @@ declare namespace intelligentVoice {
      * @type { string }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     filesDescription: string;
     /**
@@ -238,7 +278,8 @@ declare namespace intelligentVoice {
      * @type { Array<ArrayBuffer> }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     filesContent: Array<ArrayBuffer>;
   }
@@ -248,7 +289,8 @@ declare namespace intelligentVoice {
    * @typedef WakeupSourceFile
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 12
+   * @since 12 dynamic
+   * @since 22 static
    */
   interface WakeupSourceFile {
     /**
@@ -256,7 +298,8 @@ declare namespace intelligentVoice {
      * @type { string }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     filePath: string;
     /**
@@ -264,7 +307,8 @@ declare namespace intelligentVoice {
      * @type { ArrayBuffer }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     fileContent: ArrayBuffer;
   }
@@ -274,16 +318,18 @@ declare namespace intelligentVoice {
    * @enum {number}
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   enum ServiceChangeType {
     /**
      * Service unavailable.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
-    SERVICE_UNAVAILABLE = 0,
+    SERVICE_UNAVAILABLE = 0
   }
 
   /**
@@ -291,30 +337,34 @@ declare namespace intelligentVoice {
    * @enum {number}
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   enum IntelligentVoiceEngineType {
     /**
      * Enroll engine.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     ENROLL_ENGINE_TYPE = 0,
     /**
      * Wakeup engine.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     WAKEUP_ENGINE_TYPE = 1,
     /**
      * Update engine.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
-    UPDATE_ENGINE_TYPE = 2,
+    UPDATE_ENGINE_TYPE = 2
   }
 
   /**
@@ -322,7 +372,8 @@ declare namespace intelligentVoice {
    * @typedef EnrollIntelligentVoiceEngineDescriptor
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   interface EnrollIntelligentVoiceEngineDescriptor {
     /**
@@ -330,7 +381,8 @@ declare namespace intelligentVoice {
      * @type { string }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     wakeupPhrase: string;
   }
@@ -340,7 +392,8 @@ declare namespace intelligentVoice {
    * @typedef WakeupIntelligentVoiceEngineDescriptor
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   interface WakeupIntelligentVoiceEngineDescriptor {
     /**
@@ -348,7 +401,8 @@ declare namespace intelligentVoice {
      * @type { boolean }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     needReconfirm: boolean;
     /**
@@ -356,7 +410,8 @@ declare namespace intelligentVoice {
      * @type { string }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     wakeupPhrase: string;
   }
@@ -366,107 +421,122 @@ declare namespace intelligentVoice {
    * @enum {number}
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 12
+   * @since 12 dynamic
+   * @since 22 static
    */
   enum EvaluationResultCode {
     /**
      * Unknown.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
-     UNKNOWN = 0,
+    UNKNOWN = 0,
     /**
      * Pass.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     PASS = 1,
     /**
      * Word is empty.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     WORD_EMPTY = 2,
     /**
      * Only chinese is supported.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     CHINESE_ONLY = 3,
     /**
      * Invalid length.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     INVALID_LENGTH = 4,
     /**
      * Unusual word.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     UNUSUAL_WORD = 5,
     /**
      * Consecutive same word.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     CONSECUTIVE_SAME_WORD = 6,
     /**
      * Too few phonemes.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     TOO_FEW_PHONEMES = 7,
     /**
      * Too many phonemes.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     TOO_MANY_PHONEMES = 8,
     /**
      * Contain common instruction.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     COMMON_INSTRUCTION = 9,
     /**
      * Contain common spoken language.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     COMMON_SPOKEN_LANGUAGE = 10,
     /**
      * Contain sensitive word.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     SENSITIVE_WORD = 11,
     /**
      * Two consecutive words without initial consonant.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     NO_INITIAL_CONSONANT = 12,
     /**
      * Contain repeated phoneme.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
-    REPEATED_PHONEME = 13,
+    REPEATED_PHONEME = 13
   }
 
   /**
@@ -474,23 +544,26 @@ declare namespace intelligentVoice {
    * @typedef EvaluationResult
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 12
+   * @since 12 dynamic
+   * @since 22 static
    */
   interface EvaluationResult {
     /**
      * Evaluation score.
-     * @type { number }
+     * @type { int }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
-    score: number;
+    score: int;
     /**
      * Describes evaluation result code.
      * @type { EvaluationResultCode }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     resultCode: EvaluationResultCode;
   }
@@ -505,7 +578,8 @@ declare namespace intelligentVoice {
    * @throws { BusinessError } 22700107 - System error.
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 12
+   * @since 12 dynamic
+   * @since 22 static
    */
   function getWakeupManager(): WakeupManager;
 
@@ -521,7 +595,8 @@ declare namespace intelligentVoice {
    * @throws { BusinessError } 22700102 - Invalid parameter.
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   function createEnrollIntelligentVoiceEngine(descriptor: EnrollIntelligentVoiceEngineDescriptor, callback: AsyncCallback<EnrollIntelligentVoiceEngine>): void;
 
@@ -537,7 +612,8 @@ declare namespace intelligentVoice {
    * @throws { BusinessError } 22700102 - Invalid parameter.
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   function createEnrollIntelligentVoiceEngine(descriptor: EnrollIntelligentVoiceEngineDescriptor): Promise<EnrollIntelligentVoiceEngine>;
 
@@ -553,7 +629,8 @@ declare namespace intelligentVoice {
    * @throws { BusinessError } 22700102 - Invalid parameter.
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   function createWakeupIntelligentVoiceEngine(descriptor: WakeupIntelligentVoiceEngineDescriptor, callback: AsyncCallback<WakeupIntelligentVoiceEngine>): void;
 
@@ -569,7 +646,8 @@ declare namespace intelligentVoice {
    * @throws { BusinessError } 22700102 - Invalid parameter.
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   function createWakeupIntelligentVoiceEngine(descriptor: WakeupIntelligentVoiceEngineDescriptor): Promise<WakeupIntelligentVoiceEngine>;
 
@@ -578,7 +656,8 @@ declare namespace intelligentVoice {
    * @typedef EnrollEngineConfig
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   interface EnrollEngineConfig {
     /**
@@ -586,7 +665,8 @@ declare namespace intelligentVoice {
      * @type { string }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     language: string;
     /**
@@ -594,7 +674,8 @@ declare namespace intelligentVoice {
      * @type { string }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     region: string;
   }
@@ -604,30 +685,34 @@ declare namespace intelligentVoice {
    * @enum {number}
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   enum SensibilityType {
     /**
      * Low sensibility.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     LOW_SENSIBILITY = 1,
     /**
      * Middle sensibility.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     MIDDLE_SENSIBILITY = 2,
     /**
      * High sensibility.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
-    HIGH_SENSIBILITY = 3,
+    HIGH_SENSIBILITY = 3
   }
 
   /**
@@ -635,7 +720,8 @@ declare namespace intelligentVoice {
    * @typedef WakeupHapInfo
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   interface WakeupHapInfo {
     /**
@@ -643,7 +729,8 @@ declare namespace intelligentVoice {
      * @type { string }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     bundleName: string;
     /**
@@ -651,7 +738,8 @@ declare namespace intelligentVoice {
      * @type { string }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     abilityName: string;
   }
@@ -661,30 +749,34 @@ declare namespace intelligentVoice {
    * @enum {number}
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   enum WakeupIntelligentVoiceEventType {
     /**
      * Wakeup None.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     INTELLIGENT_VOICE_EVENT_WAKEUP_NONE = 0,
     /**
      * Recognize complete.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     INTELLIGENT_VOICE_EVENT_RECOGNIZE_COMPLETE = 1,
     /**
      * Headset Recognize complete.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
-    INTELLIGENT_VOICE_EVENT_HEADSET_RECOGNIZE_COMPLETE = 2,
+    INTELLIGENT_VOICE_EVENT_HEADSET_RECOGNIZE_COMPLETE = 2
   }
 
   /**
@@ -692,58 +784,66 @@ declare namespace intelligentVoice {
    * @enum {number}
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   enum IntelligentVoiceErrorCode {
     /**
      * No memory.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     INTELLIGENT_VOICE_NO_MEMORY = 22700101,
     /**
      * Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     INTELLIGENT_VOICE_INVALID_PARAM = 22700102,
     /**
      * Init failed.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     INTELLIGENT_VOICE_INIT_FAILED = 22700103,
     /**
      * Failed to commit the enrollment.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     INTELLIGENT_VOICE_COMMIT_ENROLL_FAILED = 22700104,
     /**
      * Start capturer failed.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     INTELLIGENT_VOICE_START_CAPTURER_FAILED = 22700105,
     /**
      * Read failed.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     INTELLIGENT_VOICE_READ_FAILED = 22700106,
     /**
      * System error.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
-    INTELLIGENT_VOICE_SYSTEM_ERROR = 22700107,
+    INTELLIGENT_VOICE_SYSTEM_ERROR = 22700107
   }
 
   /**
@@ -751,65 +851,74 @@ declare namespace intelligentVoice {
    * @enum {number}
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   enum EnrollResult {
     /**
      * Success.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     SUCCESS = 0,
     /**
      * Vpr train failed.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     VPR_TRAIN_FAILED = -1,
     /**
      * Wakeup phrase not match.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     WAKEUP_PHRASE_NOT_MATCH = -2,
     /**
      * Too noisy.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     TOO_NOISY = -3,
     /**
      * Too loud.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     TOO_LOUD = -4,
     /**
      * Interval large.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     INTERVAL_LARGE = -5,
     /**
      * Different person.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     DIFFERENT_PERSON = -6,
     /**
      * Unknown error.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
-    UNKNOWN_ERROR = -100,
+    UNKNOWN_ERROR = -100
   }
 
   /**
@@ -817,37 +926,42 @@ declare namespace intelligentVoice {
    * @enum {number}
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 12
+   * @since 12 dynamic
+   * @since 22 static
    */
   enum CapturerChannel {
     /**
      * Capturer channel 1.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     CAPTURER_CHANNEL_1 = 0x1 << 0,
     /**
      * Capturer channel 2.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     CAPTURER_CHANNEL_2 = 0x1 << 1,
     /**
      * Capturer channel 3.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     CAPTURER_CHANNEL_3 = 0x1 << 2,
     /**
      * Capturer channel 4.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
-    CAPTURER_CHANNEL_4 = 0x1 << 3,
+    CAPTURER_CHANNEL_4 = 0x1 << 3
   }
 
   /**
@@ -855,7 +969,8 @@ declare namespace intelligentVoice {
    * @typedef EnrollCallbackInfo
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   interface EnrollCallbackInfo {
     /**
@@ -863,7 +978,8 @@ declare namespace intelligentVoice {
      * @type { EnrollResult }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     result: EnrollResult;
     /**
@@ -871,7 +987,8 @@ declare namespace intelligentVoice {
      * @type { string }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     context: string;
   }
@@ -881,7 +998,8 @@ declare namespace intelligentVoice {
    * @typedef WakeupIntelligentVoiceEngineCallbackInfo
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   interface WakeupIntelligentVoiceEngineCallbackInfo {
     /**
@@ -889,7 +1007,8 @@ declare namespace intelligentVoice {
      * @type { WakeupIntelligentVoiceEventType }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     eventId: WakeupIntelligentVoiceEventType;
     /**
@@ -897,7 +1016,8 @@ declare namespace intelligentVoice {
      * @type { boolean }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     isSuccess: boolean;
     /**
@@ -905,7 +1025,8 @@ declare namespace intelligentVoice {
      * @type { string }
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     context: string;
   }
@@ -915,7 +1036,8 @@ declare namespace intelligentVoice {
    * @typedef EnrollIntelligentVoiceEngine
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   interface EnrollIntelligentVoiceEngine {
     /**
@@ -926,7 +1048,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     getSupportedRegions(callback: AsyncCallback<Array<string>>): void;
     /**
@@ -937,7 +1060,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     getSupportedRegions(): Promise<Array<string>>;
     /**
@@ -952,7 +1076,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700103 - Init failed.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     init(config: EnrollEngineConfig, callback: AsyncCallback<void>): void;
     /**
@@ -967,7 +1092,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700103 - Init failed.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     init(config: EnrollEngineConfig): Promise<void>;
     /**
@@ -980,7 +1106,20 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 401 - Parameter error. Possible causes: 1. Mandatory parameters are left unspecified. 2. Incorrect parameter types.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     */
+    /**
+     * Enrolls for result, This method uses an asynchronous callback to return the result.
+     * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE and ohos.permission.MICROPHONE
+     * @param { boolean } isLast - isLast indicates if it is the last time to enroll.
+     * @param { AsyncCallback<EnrollCallbackInfo> } callback - the callback used to return the result.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 202 - Not system application.
+     * @throws { BusinessError } 401 - Parameter error. Possible causes: 1. Mandatory parameters are left unspecified. 2. Incorrect parameter types.
+     * @throws { BusinessError } 22700107 - System error.
+     * @syscap SystemCapability.AI.IntelligentVoice.Core
+     * @systemapi
+     * @since 22 dynamic&static
      */
     enrollForResult(isLast: boolean, callback: AsyncCallback<EnrollCallbackInfo>): void;
     /**
@@ -993,7 +1132,20 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 401 - Parameter error. Possible causes: 1. Mandatory parameters are left unspecified. 2. Incorrect parameter types.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     */
+    /**
+     * Enrolls for result, This method uses a promise to return the result.
+     * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE and ohos.permission.MICROPHONE
+     * @param { boolean } isLast - isLast indicates if it is the last time to enroll.
+     * @returns { Promise<EnrollCallbackInfo> } the promise used to return the result.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 202 - Not system application.
+     * @throws { BusinessError } 401 - Parameter error. Possible causes: 1. Mandatory parameters are left unspecified. 2. Incorrect parameter types.
+     * @throws { BusinessError } 22700107 - System error.
+     * @syscap SystemCapability.AI.IntelligentVoice.Core
+     * @systemapi
+     * @since 22 dynamic&static
      */
     enrollForResult(isLast: boolean): Promise<EnrollCallbackInfo>;
     /**
@@ -1004,7 +1156,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     stop(callback: AsyncCallback<void>): void;
     /**
@@ -1015,7 +1168,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     stop(): Promise<void>;
     /**
@@ -1027,7 +1181,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700104 - Failed to commit the enrollment.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     commit(callback: AsyncCallback<void>): void;
     /**
@@ -1039,7 +1194,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700104 - Failed to commit the enrollment.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     commit(): Promise<void>;
     /**
@@ -1053,7 +1209,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     setWakeupHapInfo(info: WakeupHapInfo, callback: AsyncCallback<void>): void;
     /**
@@ -1067,7 +1224,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     setWakeupHapInfo(info: WakeupHapInfo): Promise<void>;
     /**
@@ -1081,7 +1239,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     setSensibility(sensibility: SensibilityType, callback: AsyncCallback<void>): void;
     /**
@@ -1095,7 +1254,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     setSensibility(sensibility: SensibilityType): Promise<void>;
     /**
@@ -1110,7 +1270,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     setParameter(key: string, value: string, callback: AsyncCallback<void>): void;
     /**
@@ -1125,7 +1286,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     setParameter(key: string, value: string): Promise<void>;
     /**
@@ -1139,7 +1301,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     getParameter(key: string, callback: AsyncCallback<string>): void;
     /**
@@ -1153,7 +1316,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     getParameter(key: string): Promise<string>;
     /**
@@ -1167,7 +1331,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700107 - System error.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     evaluateForResult(word: string): Promise<EvaluationResult>;
     /**
@@ -1178,7 +1343,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     release(callback: AsyncCallback<void>): void;
     /**
@@ -1189,7 +1355,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     release(): Promise<void>;
   }
@@ -1199,7 +1366,8 @@ declare namespace intelligentVoice {
    * @typedef WakeupIntelligentVoiceEngine
    * @syscap SystemCapability.AI.IntelligentVoice.Core
    * @systemapi
-   * @since 10
+   * @since 10 dynamic
+   * @since 22 static
    */
   interface WakeupIntelligentVoiceEngine {
     /**
@@ -1210,7 +1378,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     getSupportedRegions(callback: AsyncCallback<Array<string>>): void;
     /**
@@ -1221,7 +1390,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     getSupportedRegions(): Promise<Array<string>>;
     /**
@@ -1235,7 +1405,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     setWakeupHapInfo(info: WakeupHapInfo, callback: AsyncCallback<void>): void;
     /**
@@ -1249,7 +1420,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     setWakeupHapInfo(info: WakeupHapInfo): Promise<void>;
     /**
@@ -1263,7 +1435,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     setSensibility(sensibility: SensibilityType, callback: AsyncCallback<void>): void;
     /**
@@ -1277,7 +1450,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     setSensibility(sensibility: SensibilityType): Promise<void>;
     /**
@@ -1292,7 +1466,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     setParameter(key: string, value: string, callback: AsyncCallback<void>): void;
     /**
@@ -1307,7 +1482,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     setParameter(key: string, value: string): Promise<void>;
     /**
@@ -1321,7 +1497,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     getParameter(key: string, callback: AsyncCallback<string>): void;
     /**
@@ -1335,7 +1512,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     getParameter(key: string): Promise<string>;
     /**
@@ -1348,25 +1526,45 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700107 - System error.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     getPcm(): Promise<ArrayBuffer>;
     /**
      * Starts the capturer. This method uses a promise to return the result.
      * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE
-     * @param { number } channels - the channels needed in reading. The channels should be greater than 0 and smaller than 16.
+     * @param { number } channels - the channels needed in reading. The channels should be 
+     *     greater than 0 and smaller than 16.
      * @returns { Promise<void> } the promise used to return the result.
      * @throws { BusinessError } 201 - Permission denied.
      * @throws { BusinessError } 202 - Not system application.
-     * @throws { BusinessError } 401 - Parameter error. Possible causes: 1. Mandatory parameters are left unspecified. 2. Incorrect parameter types. 3.Parameter verification failed.
+     * @throws { BusinessError } 401 - Parameter error. Possible causes: 1. Mandatory parameters are left unspecified. 
+     *     2. Incorrect parameter types. 3.Parameter verification failed.
      * @throws { BusinessError } 22700102 - Invalid parameter.
      * @throws { BusinessError } 22700105 - Start capturer failed.
      * @throws { BusinessError } 22700107 - System error.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
      */
-    startCapturer(channels: number): Promise<void>;
+    /**
+     * Starts the capturer. This method uses a promise to return the result.
+     * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE and ohos.permission.MICROPHONE
+     * @param { int } channels - the channels needed in reading. The channels should be 
+     *     greater than 0 and smaller than 16.
+     * @returns { Promise<void> } the promise used to return the result.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 202 - Not system application.
+     * @throws { BusinessError } 401 - Parameter error. Possible causes: 1. Mandatory parameters are left unspecified. 
+     *     2. Incorrect parameter types. 3.Parameter verification failed.
+     * @throws { BusinessError } 22700102 - Invalid parameter.
+     * @throws { BusinessError } 22700105 - Start capturer failed.
+     * @throws { BusinessError } 22700107 - System error.
+     * @syscap SystemCapability.AI.IntelligentVoice.Core
+     * @systemapi
+     * @since 22 dynamic&static
+     */
+    startCapturer(channels: int): Promise<void>;
     /**
      * Reads the buffer from wakeup engine. This method uses a promise to return the result.
      * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE
@@ -1378,7 +1576,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700107 - System error.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     read(): Promise<ArrayBuffer>;
     /**
@@ -1390,7 +1589,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 22700107 - System error.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 12
+     * @since 12 dynamic
+     * @since 22 static
      */
     stopCapturer(): Promise<void>;
     /**
@@ -1401,7 +1601,8 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     release(callback: AsyncCallback<void>): void;
     /**
@@ -1412,34 +1613,64 @@ declare namespace intelligentVoice {
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
+     * @since 22 static
      */
     release(): Promise<void>;
     /**
      * Subscribes wakeup intelligent voice events. When wakeup intelligent voice events reach,
      * the callback is invoked.
      * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE
-     * @param { 'wakeupIntelligentVoiceEvent' } type - Type of the event to listen for. Only the wakeupIntelligentVoice event is supported.
-     * @param { Callback<WakeupIntelligentVoiceEngineCallbackInfo> } callback - the callback invoked when the event is triggered.
+     * @param { 'wakeupIntelligentVoiceEvent' } type - Type of the event to listen for.
+     *     Only the wakeupIntelligentVoice event is supported.
+     * @param { Callback<WakeupIntelligentVoiceEngineCallbackInfo> } callback 
+     *     - the callback invoked when the event is triggered.
      * @throws { BusinessError } 201 - Permission denied.
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 10 dynamic
      */
     on(type: 'wakeupIntelligentVoiceEvent', callback: Callback<WakeupIntelligentVoiceEngineCallbackInfo>): void;
     /**
-     * Unsubscribes wakeup intelligent voice events.
+     * Subscribes wakeup intelligent voice events. When wakeup intelligent voice events reach,
+     * the callback is invoked.
      * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE
-     * @param { 'wakeupIntelligentVoiceEvent' } type - Type of the event to listen for. Only the wakeupIntelligentVoice event is supported.
-     * @param { Callback<WakeupIntelligentVoiceEngineCallbackInfo> } [callback] - the callback invoked when the event is triggered.
+     * @param { Callback<WakeupIntelligentVoiceEngineCallbackInfo> } callback 
+     *     - the callback invoked when the event is triggered.
      * @throws { BusinessError } 201 - Permission denied.
      * @throws { BusinessError } 202 - Not system application.
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
-     * @since 10
+     * @since 22 static
+     */
+    onWakeupIntelligentVoiceEvent(callback: Callback<WakeupIntelligentVoiceEngineCallbackInfo>): void;
+    /**
+     * Unsubscribes wakeup intelligent voice events.
+     * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE
+     * @param { 'wakeupIntelligentVoiceEvent' } type - Type of the event to listen for.
+     *     Only the wakeupIntelligentVoice event is supported.
+     * @param { Callback<WakeupIntelligentVoiceEngineCallbackInfo> } [callback]
+     *     - the callback invoked when the event is triggered.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 202 - Not system application.
+     * @syscap SystemCapability.AI.IntelligentVoice.Core
+     * @systemapi
+     * @since 10 dynamic
      */
     off(type: 'wakeupIntelligentVoiceEvent', callback?: Callback<WakeupIntelligentVoiceEngineCallbackInfo>): void;
+    /**
+     * Unsubscribes wakeup intelligent voice events.
+     * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE
+     * @param { Callback<WakeupIntelligentVoiceEngineCallbackInfo> } [callback] 
+     *     - the callback invoked when the event is triggered.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 202 - Not system application.
+     * @syscap SystemCapability.AI.IntelligentVoice.Core
+     * @systemapi
+     * @since 22 static
+     */
+    offWakeupIntelligentVoiceEvent(callback?: Callback<WakeupIntelligentVoiceEngineCallbackInfo>): void;
   }
 }
 

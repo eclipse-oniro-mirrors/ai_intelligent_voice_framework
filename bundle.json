@@ -43,6 +43,7 @@
                 "power_manager",
                 "window_manager",
                 "ffrt",
+                "runtime_core",
                 "eventhandler"
             ]
         },
@@ -66,7 +67,9 @@
                 "//foundation/ai/intelligent_voice_framework/frameworks/js:intelligentvoice_js",
                 "//foundation/ai/intelligent_voice_framework/frameworks/native:intellvoice_native",
                 "//foundation/ai/intelligent_voice_framework/sa_profile:intell_voice_service_sa_profile",
-                "//foundation/ai/intelligent_voice_framework/utils:intell_voice_utils"
+                "//foundation/ai/intelligent_voice_framework/utils:intell_voice_utils",
+		            "//foundation/ai/intelligent_voice_framework/frameworks/taihe:intelligent_voice_framework_taihe",
+                "//foundation/ai/intelligent_voice_framework/frameworks/taihe:intelligent_voice_framework_taihe_gen_only"
             ],
             "inner_kits": [
                 {
