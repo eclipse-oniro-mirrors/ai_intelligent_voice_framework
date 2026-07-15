@@ -44,7 +44,8 @@
                 "window_manager",
                 "ffrt",
                 "runtime_core",
-                "eventhandler"
+                "eventhandler",
+                "taihe_ffi_gen"
             ]
         },
         "features": [
