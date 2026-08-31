@@ -23,6 +23,7 @@
 #include "call_manager_inner_type.h"
 #endif
 #include "audio_policy_manager.h"
+#include "iservice_registry.h"
 
 #include "intell_voice_log.h"
 #include "trigger_connector_mgr.h"
