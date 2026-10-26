@@ -15,6 +15,7 @@
 
 #include "engine_factory.h"
 #include "enroll_engine.h"
+#include "implicit_enroll_engine.h"
 #include "wakeup_engine_obj.h"
 #include "update_engine.h"
 #include "high_power_wakeup_engine.h"
@@ -22,6 +23,7 @@
 #include "intell_voice_generic_factory.h"
 
 using namespace OHOS::IntellVoiceUtils;
+#undef LOG_TAG
 #define LOG_TAG "EngineFactory"
 
 namespace OHOS {
@@ -32,6 +34,9 @@ sptr<EngineBase> EngineFactory::CreateEngineInst(IntellVoiceEngineType type, con
     switch (type) {
         case INTELL_VOICE_ENROLL:
             engine = SptrFactory<EngineBase, EnrollEngine>::CreateInstance(param);
+            break;
+        case INTELL_VOICE_IMPLICIT_ENROLL:
+            engine = SptrFactory<EngineBase, ImplicitEnrollEngine>::CreateInstance(param);
             break;
         case INTELL_VOICE_WAKEUP:
 #ifdef ONLY_SECOND_STAGE

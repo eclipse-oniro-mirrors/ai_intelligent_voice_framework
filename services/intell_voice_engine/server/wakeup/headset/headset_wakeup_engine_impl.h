@@ -22,34 +22,33 @@
 #include "audio_info.h"
 #include "intell_voice_generic_factory.h"
 #include "i_intell_voice_engine.h"
+#include "i_device_wakeup.h"
+#include "base_wakeup_engine_impl.h"
 #include "state_manager.h"
 #include "engine_util.h"
 #include "wakeup_adapter_listener.h"
 #include "wakeup_source_process.h"
 #include "task_executor.h"
+#include "accessories_cloud_reporter.h"
 
 namespace OHOS {
 namespace IntellVoiceEngine {
 using OHOS::IntellVoiceUtils::StateMsg;
 using OHOS::IntellVoiceUtils::State;
+using OHOS::IntellVoiceUtils::ProcessType;
+using OHOS::IntellVoiceUtils::StateInfoListener;
 
 class HeadsetWakeupEngineImpl : private OHOS::IntellVoiceUtils::ModuleStates, private EngineUtil,
-    private WakeupSourceProcess, private OHOS::IntellVoiceUtils::TaskExecutor {
+    private WakeupSourceProcess, private OHOS::IntellVoiceUtils::TaskExecutor, public BaseWakeupEngineImpl {
 public:
     HeadsetWakeupEngineImpl();
-    ~HeadsetWakeupEngineImpl();
+    ~HeadsetWakeupEngineImpl() override;
+    bool Create(std::shared_ptr<StateInfoListener> stateListener) override;
+    bool Destroy() override;
     bool Init();
-    int32_t Handle(const StateMsg &msg);
-
-private:
-    enum EngineState {
-        IDLE = 0,
-        INITIALIZING = 1,
-        INITIALIZED = 2,
-        RECOGNIZING = 3,
-        RECOGNIZED = 4,
-        READ_CAPTURER = 5,
-    };
+    void OnTriggerDetected(int32_t uuid, const std::shared_ptr<WakeupDeviceDetail>& wakeupDevice,
+        const EventDetail &event) override;
+    int32_t Handle(const StateMsg &msg) override;
 
 private:
     bool SetCallbackInner();
@@ -81,10 +80,12 @@ private:
     using EngineUtil::adapter_;
     int32_t channels_ = 0;
     std::atomic<bool> isReading_ = false;
+    bool needSecondStageWakeup = true;
     std::thread readThread_;
     sptr<OHOS::HDI::IntelligentVoice::Engine::V1_0::IIntellVoiceEngineCallback> callback_ = nullptr;
     std::shared_ptr<WakeupAdapterListener> adapterListener_ = nullptr;
     friend class OHOS::IntellVoiceUtils::UniquePtrFactory<HeadsetWakeupEngineImpl>;
+    std::shared_ptr<AccessoriesCloudReporter> mCloudReporter { nullptr };
 };
 }
 }

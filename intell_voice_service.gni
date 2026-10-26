@@ -19,6 +19,8 @@ declare_args() {
   intelligent_voice_framework_only_second_stage = false
   intelligent_voice_framework_window_manager_enable = false
   intelligent_voice_framework_power_manager_enable = false
+  intelligent_voice_framework_record_wakeup_concurrent_enable = false
+  intelligent_voice_framework_fan_status_listen_enable = false
   intelligent_voice_framework_first_stage_oneshot_enable = false
   if (defined(global_parts_info) &&
       defined(global_parts_info.telephony_state_registry) &&

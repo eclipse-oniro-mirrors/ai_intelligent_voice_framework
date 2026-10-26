@@ -17,6 +17,7 @@
 #include <mutex>
 #include <map>
 #include <atomic>
+#include "i_device_wakeup.h"
 #include "switch_observer.h"
 #include "switch_provider.h"
 #include "task_executor.h"
@@ -54,6 +55,7 @@ public:
 
     bool RegisterProxyDeathRecipient(IntellVoiceEngineType type, const sptr<IRemoteObject> &object);
     bool DeregisterProxyDeathRecipient(IntellVoiceEngineType type);
+    bool RegisterDeviceDeathRecipient(const std::string &serviceName, const sptr<IRemoteObject> &object);
     int32_t GetUploadFiles(int numMax, std::vector<UploadFilesFromHdi> &files);
     int32_t EngineSetParameter(const std::string &keyValueList);
     std::string EngineGetParameter(const std::string &key);
@@ -70,8 +72,11 @@ public:
     void StopDetection(int32_t uuid);
     bool QuerySwitchStatus(const std::string &key) override;
     int32_t ClearUserData();
+    int32_t RegisterWakeupDevice(const std::string &macAddress, const WakeupDeviceInfo &info);
+    int32_t DeregisterWakeupDevice(const std::string &macAddress);
     void OnServiceStart(std::map<int32_t, std::function<void(bool)>> &saChangeFuncMap);
     void OnServiceStop();
+    void OnServiceActive();
 
     using TaskExecutor::AddAsyncTask;
     using TaskExecutor::AddSyncTask;
@@ -80,10 +85,11 @@ public:
 private:
     void HandleCloseWakeupSource(bool isNeedStop = false) override;
     void HandleClearWakeupEngineCb() override;
-    void HandleHeadsetHostDie() override;
+    void HandleDeviceServiceDie(const std::string &serviceName) override;
     void HandleUpdateComplete(int32_t result, const std::string &param) override;
     void HandleUpdateRetry() override;
     int32_t ReleaseEngine(IntellVoiceEngineType type) override;
+    int32_t ReleaseImplicitEnrollEngine() override;
     std::string TriggerGetParameter(const std::string &key) override;
     int32_t TriggerSetParameter(const std::string &key, const std::string &value) override;
     void TriggerMgrUpdateModel(std::vector<uint8_t> buffer, int32_t uuid,
@@ -93,7 +99,8 @@ private:
     IntellVoiceServiceManager();
     static bool IsSwitchKeyValid(const std::string &key)
     {
-        if ((key == WAKEUP_KEY) || (key == WHISPER_KEY) || (key == SHORTWORD_KEY)) {
+        if ((key == WAKEUP_KEY) || (key == WHISPER_KEY) ||
+            (key == SHORTWORD_KEY) || (key == DUALMIC_KEY)) {
             return true;
         }
         return false;
@@ -132,8 +139,25 @@ private:
     void HandleRecordStartInfoChange();
     void OnTriggerConnectServiceStart() override;
     void SetShortWordStatus();
+    void SetDualMicStatus();
+    void ScheduleDelayedUnload();
+    void DelayedUnloadService();
+    void HandleSensibility(const std::string &key, const std::string &value);
+    void HandleWakeupScene(const std::string &key, const std::string &value);
+    void HandleWakeupBundleName(const std::string &key, const std::string &value);
+    void HandleWakeupAbilityName(const std::string &key, const std::string &value);
+    void HandleCountryInfo(const std::string &key, const std::string &value);
+    void HandleRecordStart(const std::string &key, const std::string &value);
+    void HandleTriggerParam(const std::string &key, const std::string &value);
+    void HandleConcurrentWhiteList(const std::string &key, const std::string &value);
+    int32_t HandleDataClear(const std::string &key, const std::string &value);
+    int32_t HandleEngineRelease(const std::string &key, const std::string &value);
+    void HandleConcurrentBlackList(const std::string &key, const std::string &value); 
+    void InitParameterHandlerMap();
 
 private:
+    std::map<std::string, std::function<void(const std::string&, const std::string&)>> voidHandlerMap_;
+    std::map<std::string, std::function<int32_t(const std::string&, const std::string&)>> handlerMap_;
     bool notifyPowerModeChange_ = false;
     std::mutex powerModeChangeMutex_;
     std::condition_variable powerModeChangeCv_;
@@ -150,6 +174,10 @@ private:
     std::shared_ptr<ffrt::queue> taskQueue_ = nullptr;
     std::map<int32_t, ffrt::task_handle> taskHandle_;
 #endif
+    std::mutex delayUnloadMutex_;
+    bool delayUnloadWaiting_ = false;
+    std::atomic<bool> serviceUnloading_ = false;
+    std::chrono::steady_clock::time_point lastCallTime_;
 };
 }  // namespace IntellVoice
 }  // namespace OHOS

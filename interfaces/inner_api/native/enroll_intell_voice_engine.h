@@ -34,6 +34,7 @@ struct EnrollIntelligentVoiceEngineDescriptor {
 struct EngineConfig {
     std::string language;
     std::string region;
+    std::string enrollScenario;
 };
 
 class EnrollIntellVoiceEngine {

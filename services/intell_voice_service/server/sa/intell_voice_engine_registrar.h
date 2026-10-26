@@ -26,11 +26,12 @@ public:
 private:
     virtual void HandleCloseWakeupSource(bool isNeedStop = false) = 0;
     virtual void HandleClearWakeupEngineCb() = 0;
-    virtual void HandleHeadsetHostDie() = 0;
+    virtual void HandleDeviceServiceDie(const std::string &serviceName) = 0;
     virtual int32_t HandleReleaseEngine(IntellVoiceEngineType type) = 0;
     virtual void HandleUpdateComplete(int32_t result, const std::string &param) = 0;
     virtual void HandleUpdateRetry() = 0;
     virtual int32_t ReleaseEngine(IntellVoiceEngineType type) = 0;
+    virtual int32_t ReleaseImplicitEnrollEngine() = 0;
     virtual bool QuerySwitchStatus(const std::string &key) = 0;
     virtual std::string TriggerGetParameter(const std::string &key) = 0;
     virtual int32_t TriggerSetParameter(const std::string &key, const std::string &value) = 0;
@@ -40,11 +41,12 @@ private:
 private:
     void RegisterHandleCloseWakeupSource();
     void RegisterHandleClearWakeupEngineCb();
-    void RegisterHandleHeadsetHostDie();
+    void RegisterHandleDeviceServiceDie();
     void RegisterHandleReleaseEngine();
     void RegisterHandleUpdateComplete();
     void RegisterHandleUpdateRetry();
     void RegisterReleaseEngine();
+    void RegisterReleaseImplicitEnrollEngine();
     void RegisterQuerySwitchStatus();
     void RegisterTriggerGetParameter();
     void RegisterTriggerSetParameter();

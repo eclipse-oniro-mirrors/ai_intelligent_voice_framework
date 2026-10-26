@@ -364,6 +364,8 @@ void WakeupManagerNapi::GetUploadFilesComplete(napi_env env, AsyncContext *data,
     for (uint32_t index = 0; index < uploadFiles.size(); index++) {
         napi_value obj;
         if (napi_create_object(env, &obj) != napi_ok) {
+            INTELL_VOICE_LOG_ERROR("napi_create_object failed");
+            context->result_ = NAPI_INTELLIGENT_VOICE_NO_MEMORY;
             goto EXIT;
         }
 

@@ -16,6 +16,7 @@
 #define ENGINE_MANAGER_HOST_H
 #include "v1_0/iintell_voice_engine_manager.h"
 #include "v1_2/iintell_voice_engine_manager.h"
+#include "v1_3/iintell_voice_engine_manager.h"
 #include "intell_voice_death_recipient.h"
 #include "i_adapter_host_manager.h"
 
@@ -59,6 +60,10 @@ public:
     {
         return engineHostProxy1_2_;
     }
+    const sptr<OHOS::HDI::IntelligentVoice::Engine::V1_3::IIntellVoiceEngineManager> &GetEngineHostProxy1_3() const
+    {
+        return engineHostProxy1_3_;
+    }
 
 private:
     static void OnEngineHDIDiedCallback();
@@ -66,6 +71,7 @@ private:
     sptr<OHOS::HDI::IntelligentVoice::Engine::V1_0::IIntellVoiceEngineManager> engineHostProxy1_0_ = nullptr;
     sptr<OHOS::HDI::IntelligentVoice::Engine::V1_1::IIntellVoiceEngineManager> engineHostProxy1_1_ = nullptr;
     sptr<OHOS::HDI::IntelligentVoice::Engine::V1_2::IIntellVoiceEngineManager> engineHostProxy1_2_ = nullptr;
+    sptr<OHOS::HDI::IntelligentVoice::Engine::V1_3::IIntellVoiceEngineManager> engineHostProxy1_3_ = nullptr;
     sptr<OHOS::IntellVoiceUtils::IntellVoiceDeathRecipient> engineHdiDeathRecipient_ = nullptr;
     sptr<IIntellVoiceDataOprCallback> dataOprCb_ = nullptr;
 };

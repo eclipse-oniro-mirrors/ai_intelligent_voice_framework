@@ -20,6 +20,24 @@
 
 namespace OHOS {
 namespace IntellVoiceUtils {
+template <typename B, typename D>
+class EngineImplFactory {
+public:
+    template<typename ...Args>
+    static std::shared_ptr<B> CreateInstance(Args && ...args)
+    {
+        B *instance = new(std::nothrow) D {};
+        if (instance == nullptr) {
+            return nullptr;
+        }
+        if (!instance->Create(std::forward<Args>(args)...)) {
+            delete instance;
+            return nullptr;
+        }
+        return std::shared_ptr<B>(instance);
+    }
+};
+
 template <typename T>
 class UniquePtrFactory {
 public:

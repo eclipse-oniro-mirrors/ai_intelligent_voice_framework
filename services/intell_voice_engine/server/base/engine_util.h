@@ -65,7 +65,7 @@ struct StringParam {
     explicit StringParam(const std::string &str = "") : strParam(str) {}
     std::string strParam;
 };
-
+const std::string WAKEUP_SENSIBILITY = "WAKEUP_SENSIBILITY";
 class EngineUtil {
 public:
     EngineUtil();
@@ -98,6 +98,7 @@ public:
     void SetWhisperVpr();
     void SetArea();
     void SetSensibility();
+    void SetTriggerParameter();
     void SelectInputDevice(AudioStandard::DeviceType type);
     void SetScreenStatus();
     void SetImproveParam();

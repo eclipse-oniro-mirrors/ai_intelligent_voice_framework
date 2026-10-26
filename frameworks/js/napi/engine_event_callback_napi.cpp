@@ -17,6 +17,7 @@
 #include "intell_voice_info.h"
 #include "intell_voice_log.h"
 #include "intell_voice_common_napi.h"
+#include "scope_guard.h"
 #include "v1_2/intell_voice_engine_types.h"
 
 #define LOG_TAG "EngineEventCallbackNapi"
@@ -112,17 +113,31 @@ void EngineEventCallbackNapi::OnJsCallbackEngineEvent(const EngineCallBackInfo &
     uv_work_t *work = new (nothrow) uv_work_t;
     CHECK_CONDITION_RETURN_VOID((work == nullptr), "Create uv work failed, no memory");
     work->data = new EngineEventCallbackData { cbInfo, cbRef };
-    CHECK_CONDITION_RETURN_VOID((work->data == nullptr), "Create uv work data failed, no memory");
+    if (work->data == nullptr) {
+        INTELL_VOICE_LOG_ERROR("Create uv work data failed, no memory");
+        delete work;
+        return;
+    }
 
     int32_t ret = uv_queue_work_with_qos(loop_, work, [](uv_work_t *work) {}, [](uv_work_t *work, int uvStatus) {
-        std::shared_ptr<EngineEventCallbackData> callbackData(
-            static_cast<EngineEventCallbackData *>(work->data), [work](EngineEventCallbackData *data) {
-                delete data;
-                delete work;
-        });
+        EngineEventCallbackData *callbackData = static_cast<EngineEventCallbackData *>(work->data);
+        napi_handle_scope scope = nullptr;
+        ON_SCOPE_EXIT {
+            if (scope != nullptr && callbackData != nullptr && callbackData->callback != nullptr) {
+                napi_close_handle_scope(callbackData->callback->env_, scope);
+            }
+            delete callbackData;
+            delete work;
+        };
+
         CHECK_CONDITION_RETURN_VOID((callbackData == nullptr), "uvCallback is nullptr");
         CHECK_CONDITION_RETURN_VOID((callbackData->callback == nullptr), "uvCallback callback is nullptr");
         napi_env env = callbackData->callback->env_;
+        napi_status openStatus = napi_open_handle_scope(env, &scope);
+        if (openStatus != napi_ok || scope == nullptr) {
+            INTELL_VOICE_LOG_ERROR("open handle scope failed");
+            return;
+        }
         napi_value jsCallback = callbackData->callback->GetRefValue();
         CHECK_CONDITION_RETURN_VOID((jsCallback == nullptr), "get reference value failed");
 

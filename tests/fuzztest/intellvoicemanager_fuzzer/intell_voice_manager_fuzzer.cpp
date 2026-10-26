@@ -36,6 +36,7 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
         INTELL_VOICE_LOG_INFO("intell voice test error input");
         return 0;
     }
+#ifndef FUZZ_EMULATOR
     /* Run your code on data */
     vector<thread> threads(THREAD_NUM);
     for (int i = 0; i < THREAD_NUM; i++) {
@@ -50,5 +51,6 @@ extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size)
     for (int i = 0; i < THREAD_NUM; i++) {
         threads[i].join();
     }
+#endif
     return 0;
 }

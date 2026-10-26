@@ -49,10 +49,8 @@ IntellVoiceEngineStub::IntellVoiceEngineStub()
         MessageParcel &reply) -> int32_t { return this->GetWakeupPcmInner(data, reply); };
     processFuncMap_[INTELL_VOICE_ENGINE_EVALUATE] = [this](MessageParcel &data,
         MessageParcel &reply) -> int32_t { return this->EvaluateInner(data, reply); };
-    processFuncMap_[INTELL_VOICE_ENGINE_NOTIFY_HEADSET_WAKE_EVENT] = [this](MessageParcel &data,
-        MessageParcel &reply) -> int32_t { return this->NotifyHeadSetWakeEventInner(data, reply); };
-    processFuncMap_[INTELL_VOICE_ENGINE_NOTIFY_HEADSET_HOSTEVENT] = [this](MessageParcel &data,
-        MessageParcel &reply) -> int32_t { return this->NotifyHeadSetHostEventInner(data, reply); };
+    processFuncMap_[INTELL_VOICE_ENGINE_NOTIFY_DEVICE_WAKEUP_EVENT] = [this](MessageParcel &data,
+        MessageParcel &reply) -> int32_t { return this->NotifyDeviceWakeupEventInner(data, reply); };
 }
 
 IntellVoiceEngineStub::~IntellVoiceEngineStub()
@@ -211,19 +209,20 @@ int32_t IntellVoiceEngineStub::EvaluateInner(MessageParcel &data, MessageParcel 
     return ret;
 }
 
-int32_t IntellVoiceEngineStub::NotifyHeadSetWakeEventInner(MessageParcel &data, MessageParcel &reply)
+int32_t IntellVoiceEngineStub::NotifyDeviceWakeupEventInner(MessageParcel &data, MessageParcel &reply)
 {
     INTELL_VOICE_LOG_INFO("enter");
-    int32_t ret = NotifyHeadsetWakeEvent();
-    reply.WriteInt32(ret);
-    return ret;
-}
-
-int32_t IntellVoiceEngineStub::NotifyHeadSetHostEventInner(MessageParcel &data, MessageParcel &reply)
-{
-    INTELL_VOICE_LOG_INFO("enter");
-    int event = data.ReadInt32();
-    int32_t ret = NotifyHeadsetHostEvent(static_cast<OHOS::IntellVoiceEngine::HeadsetHostEventType>(event));
+    std::string macAddress = data.ReadString();
+    int32_t eventCode = data.ReadInt32();
+    int32_t endFrameIndex = data.ReadInt32();
+    if (eventCode >= OHOS::IntellVoiceEngine::DeviceWakeupEvent::EVENT_MAX
+        || eventCode < OHOS::IntellVoiceEngine::DeviceWakeupEvent::VOICE_RECOGNIZE_EVENT) {
+        INTELL_VOICE_LOG_ERROR("failed to evaluate");
+        return 1;
+    }
+    DeviceWakeupEvent event = static_cast<OHOS::IntellVoiceEngine::DeviceWakeupEvent>(eventCode);
+    int32_t ret = NotifyDeviceWakeupEvent(macAddress, {event, endFrameIndex});
+ 
     reply.WriteInt32(ret);
     return ret;
 }

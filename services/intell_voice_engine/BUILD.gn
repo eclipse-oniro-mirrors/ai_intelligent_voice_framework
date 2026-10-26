@@ -25,14 +25,18 @@ ohos_source_set("engine_source") {
       "server/base/engine_base.cpp",
       "server/base/engine_factory.cpp",
       "server/base/engine_util.cpp",
+      "server/base/engine_offline_audio_processor.cpp",
       "server/base/file_source.cpp",
       "server/base/intell_voice_engine_callback_proxy.cpp",
       "server/base/intell_voice_engine_stub.cpp",
       "server/base/intell_voice_sensibility.cpp",
       "server/base/intell_voice_update_callback_proxy.cpp",
       "server/base/swing_service_wrapper.cpp",
+      "server/base/engine_device_manager.cpp",
       "server/enroll/enroll_adapter_listener.cpp",
       "server/enroll/enroll_engine.cpp",
+      "server/implicit/implicit_enroll_adapter_listener.cpp",
+      "server/implicit/implicit_enroll_engine.cpp",
       "server/hdi_adapter/adapter_host_manager.cpp",
       "server/hdi_adapter/engine_host_manager.cpp",
       "server/hdi_adapter/headset_adapter_host_manager.cpp",
@@ -49,11 +53,15 @@ ohos_source_set("engine_source") {
       "server/update/update_engine_utils.cpp",
       "server/wakeup/headset/headset_wakeup_engine_impl.cpp",
       "server/wakeup/headset/headset_wakeup_wrapper.cpp",
+      "server/wakeup/glasses/glasses_wakeup_engine_impl.cpp",
+      "server/wakeup/glasses/glasses_wakeup_wrapper.cpp",
       "server/wakeup/wakeup_adapter_listener.cpp",
       "server/wakeup/wakeup_engine.cpp",
       "server/wakeup/wakeup_engine_impl.cpp",
       "server/wakeup/wakeup_source_process.cpp",
       "server/wakeup/wakeup_source_stop_callback.cpp",
+      "server/wakeup/wakeup_engine_impl_facade.cpp",
+      "server/wakeup/accessories_cloud_reporter.cpp",
     ]
 
     if (intelligent_voice_framework_only_second_stage) {
@@ -71,6 +79,7 @@ ohos_source_set("engine_source") {
       "intell_voice_engine",
       "server/base",
       "server/enroll",
+      "server/implicit",
       "server/hdi_adapter",
       "server/update",
       "server/update/controller",
@@ -78,6 +87,7 @@ ohos_source_set("engine_source") {
       "server/utils",
       "server/wakeup",
       "server/wakeup/headset",
+      "server/wakeup/glasses",
       "server/wakeup/high_power",
     ]
 
@@ -86,10 +96,15 @@ ohos_source_set("engine_source") {
       "audio_framework:audio_capturer",
       "audio_framework:audio_client",
       "audio_framework:audio_foundation",
+      "audio_framework:audio_policy_client",
+      "audio_framework:offline_audio_effect",
+      "drivers_interface_audio:libeffect_proxy_1.0",
+
       "c_utils:utils",
       "drivers_interface_intelligent_voice:libintell_voice_engine_proxy_1.0",
       "drivers_interface_intelligent_voice:libintell_voice_engine_proxy_1.1",
       "drivers_interface_intelligent_voice:libintell_voice_engine_proxy_1.2",
+      "drivers_interface_intelligent_voice:libintell_voice_engine_proxy_1.3",
       "eventhandler:libeventhandler",
       "ffrt:libffrt",
       "hdf_core:libhdi",
@@ -149,8 +164,9 @@ ohos_source_set("engine_source") {
       "inc",
       "../intell_voice_service/inc",
       "../../../../ai/intelligent_voice_framework/utils",
+      "../../../../ai/intelligent_voice_framework/interfaces/inner_api/native",
     ]
-    external_deps = []
+    external_deps = [ "hilog:libhilog" ]
   }
 
   cflags_cc = [
@@ -158,6 +174,8 @@ ohos_source_set("engine_source") {
     "-DHILOG_ENABLE",
     "-DENABLE_DEBUG",
     "-DUSE_FFRT",
+    "-Oz",
+    "-flto",
   ]
 
   if (intelligent_voice_framework_only_second_stage) {

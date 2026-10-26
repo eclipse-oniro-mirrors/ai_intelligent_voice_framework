@@ -27,10 +27,13 @@ public:
     static bool GetEnrollResult(IntellVoiceEngineType type) { return false; };
 
     bool AnyEngineExist(const std::vector<IntellVoiceEngineType>& types) { return false; };
+    void OnAudioPolicyServiceChange(bool isAdded) {};
     bool RegisterProxyDeathRecipient(IntellVoiceEngineType type, const sptr<IRemoteObject> &object) { return false; };
     bool DeregisterProxyDeathRecipient(IntellVoiceEngineType type) { return true; };
+    bool RegisterDeviceDeathRecipient(const std::string &serviceName,
+        const sptr<IRemoteObject> &object) { return false; };
 
-    int32_t SetParameter(const std::string &sensibility) { return 0; };
+    int32_t SetParameter(const std::string &key, const std::string &value) { return 0; };
     std::string GetParameter(const std::string &key) { return ""; };
     int32_t GetWakeupSourceFilesList(std::vector<std::string> &cloneFiles) { return 0; };
     int32_t GetWakeupSourceFile(const std::string &filePath, std::vector<uint8_t> &buffer) { return 0; };
@@ -38,7 +41,7 @@ public:
     int32_t GetUploadFiles(int numMax, std::vector<UploadFilesFromHdi> &files) { return 0; };
 
     void ClearUserDataInner() {};
-    void HeadsetHostDie() {};
+    void DeviceServiceDie(const std::string &serviceName) {};
     bool IsNeedUpdateComplete(int32_t result, const std::string &param) { return false; };
     bool IsNeedUpdateRetry() { return false; };
     void EngineOnDetected(int32_t uuid) {};
@@ -51,10 +54,15 @@ public:
     int32_t SilenceUpdate() { return 0; };
     int32_t WhisperVprUpdate(bool reEnroll = false) { return 0; };
     int32_t CloneUpdate(const std::string &wakeupInfo, const sptr<IRemoteObject> &object) { return 0; };
+    int32_t ImplicitEnroll(const std::string &wakeupInfo, const sptr<IRemoteObject> &object) { return 0; };
     int32_t ServiceStopProc() { return 0; };
     void SetDspSensibility(const std::string &sensibility) {};
     void OnServiceStart() {};
     void OnServiceStop() {};
+    int32_t RegisterWakeupDevice(const std::string &macAddress, const WakeupDeviceInfo &info) { return 0; };
+    int32_t DeregisterWakeupDevice(const std::string &macAddress) { return 0; };
+    void SubscribeSwingEvent(const std::string &event) {};
+    void UnSubscribeSwingEvent(const std::string &event) {};
 };
 }  // namespace IntellVoice
 }  // namespace OHOS

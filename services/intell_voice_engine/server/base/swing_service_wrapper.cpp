@@ -22,6 +22,8 @@
 namespace OHOS {
 namespace IntellVoiceEngine {
 static const std::string SWINGSERVICE_SO_PATH = "libswing_client.z.so";
+bool SwingServiceWrapper::isModelLoaded_ = false;
+std::mutex SwingServiceWrapper::mutex_;
 
 int32_t SwingServiceWrapper::LoadSwingServiceLib()
 {
@@ -86,22 +88,37 @@ int32_t SwingServiceWrapper::SubscribeSwingEvent(std::string swingEventType, std
 {
     INTELL_VOICE_LOG_INFO("enter");
     std::lock_guard<std::mutex> lock(mutex_);
+    isModelLoaded_ = true;
     if (swingServicePriv_.subscribeSwingEvent == nullptr) {
         INTELL_VOICE_LOG_ERROR("failed to get subscribeSwingEvent");
         return -1;
     }
-    return swingServicePriv_.subscribeSwingEvent(swingEventType.c_str(), eventParams.c_str());
+    int32_t ret = swingServicePriv_.subscribeSwingEvent(swingEventType.c_str(), eventParams.c_str());
+
+    if (ret != 0) {
+        INTELL_VOICE_LOG_ERROR("load tiny model failed: %{public}d", ret);
+    }
+    return ret; 
 }
 
 int32_t SwingServiceWrapper::UnSubscribeSwingEvent(std::string swingEventType, std::string eventParams)
 {
     INTELL_VOICE_LOG_INFO("enter");
     std::lock_guard<std::mutex> lock(mutex_);
+    if (!isModelLoaded_) {
+        INTELL_VOICE_LOG_INFO("no need to UnSubscribeSwingEvent.");
+        return 0;
+    }
+    isModelLoaded_ = false;
     if (swingServicePriv_.unSubscribeSwingEvent == nullptr) {
         INTELL_VOICE_LOG_ERROR("failed to get unSubscribeSwingEvent");
         return -1;
     }
-    return swingServicePriv_.unSubscribeSwingEvent(swingEventType.c_str(), eventParams.c_str());
+    int32_t ret = swingServicePriv_.unSubscribeSwingEvent(swingEventType.c_str(), eventParams.c_str());
+    if (ret != 0) {
+        INTELL_VOICE_LOG_ERROR("unload tiny model failed: %{public}d", ret);
+    }
+    return ret;
 }
 }  // namespace IntellVoice
 }  // namespace OHOS

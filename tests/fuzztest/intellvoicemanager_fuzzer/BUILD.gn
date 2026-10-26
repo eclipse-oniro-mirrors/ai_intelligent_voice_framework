@@ -46,6 +46,10 @@ ohos_fuzztest("IntellVoiceManagerFuzzTest") {
     "../../../utils:intell_voice_utils",
   ]
 
+  if (is_emulator) {
+        defines = [ "FUZZ_EMULATOR" ]
+  }
+
   external_deps = [
     "c_utils:utils",
     "drivers_interface_intelligent_voice:intell_voice_engine_idl_headers_1.0",

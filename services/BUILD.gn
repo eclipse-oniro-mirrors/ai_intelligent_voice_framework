@@ -28,26 +28,38 @@ ohos_shared_library("intell_voice_proxy") {
     "intell_voice_service/inc",
     "intell_voice_engine/proxy",
     "../utils",
+    "../interfaces/inner_api/native",
   ]
 
   cflags_cc = [
     "-Wno-error=unused-parameter",
     "-DHILOG_ENABLE",
     "-DENABLE_DEBUG",
+    "-Oz",
+    "-flto",
   ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    cfi_vcall_icall_only = true
+    debug = false
+  }
+  branch_protector_ret = "pac_ret"
 
   external_deps = [
     "c_utils:utils",
     "drivers_interface_intelligent_voice:libintell_voice_engine_proxy_1.0",
     "drivers_interface_intelligent_voice:libintell_voice_engine_proxy_1.1",
     "drivers_interface_intelligent_voice:libintell_voice_engine_proxy_1.2",
+    "drivers_interface_intelligent_voice:libintell_voice_engine_proxy_1.3",
     "hdf_core:libhdf_ipc_adapter",
     "hdf_core:libhdf_utils",
     "hdf_core:libhdi",
     "hilog:libhilog",
     "ipc:ipc_core",
     "safwk:system_ability_fwk",
-    "samgr:samgr_proxy",
+    "samgr:samgr_proxy"
   ]
 
   innerapi_tags = [ "platformsdk" ]

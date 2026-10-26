@@ -18,17 +18,22 @@
 #include "base_macros.h"
 #include "intell_voice_generic_factory.h"
 #include "wakeup_engine.h"
-#include "wakeup_engine_impl.h"
+#include "wakeup_engine_impl_facade.h"
+#include "engine_base.h"
 
 namespace OHOS {
 namespace IntellVoiceEngine {
-class WakeupEngineObj : public WakeupEngine, public WakeupEngineImpl {
+class WakeupEngineObj : public WakeupEngine, public WakeupEngineImplFacade {
 public:
     ~WakeupEngineObj() {}
+    wptr<RefBase> GetWeakRef() override
+    {
+        return wptr<RefBase>(static_cast<EngineBase*>(this));
+    }
 
 private:
     WakeupEngineObj() {}
-    IMPL_ROLE(WakeupEngineImpl);
+    IMPL_ROLE(WakeupEngineImplFacade);
     friend class IntellVoiceUtils::SptrFactory<EngineBase, WakeupEngineObj>;
 };
 }

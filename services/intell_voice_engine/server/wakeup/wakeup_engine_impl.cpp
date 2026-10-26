@@ -14,6 +14,7 @@
  */
 #include "wakeup_engine_impl.h"
 
+#include <sys/time.h>
 #include "audio_asr.h"
 #include "audio_system_manager.h"
 #include "audio_policy_manager.h"
@@ -45,20 +46,31 @@ static constexpr int32_t CHANNEL_CNT = 1;
 static constexpr int32_t BITS_PER_SAMPLE = 16;
 static constexpr int32_t SAMPLE_RATE = 16000;
 static const std::string WAKEUP_SOURCE_CHANNEL = "wakeup_source_channel";
+static const std::string WAKEUP_MULTI_CHANNEL = "wakeup_multi_channel";
 static const std::string IS_CALLBACK_EXIST = "is_callback_exist";
+static const std::string WAKEUP_TIMESTAMP = "wakeup_timestamp";
+static const std::string TIMESTAMP_SOURCE_START = "source_start";
+static const std::string TIMESTAMP_SOURCE_END = "source_end";
 static constexpr std::string_view DEFAULT_WAKEUP_PHRASE = "\xE5\xB0\x8F\xE8\x89\xBA\xE5\xB0\x8F\xE8\x89\xBA";
 static constexpr int64_t RECOGNIZING_TIMEOUT_US = 10 * 1000 * 1000; //10s
 static constexpr int64_t RECOGNIZE_COMPLETE_TIMEOUT_US = 2 * 1000 * 1000; //2s
 static constexpr int64_t READ_CAPTURER_TIMEOUT_US = 10 * 1000 * 1000; //10s
 static constexpr uint32_t MAX_WAKEUP_TASK_NUM = 200;
 static const std::string WAKEUP_THREAD_NAME = "WakeupEngThread";
-static const std::string WAKEUP_CONFORMER_EVENT_TYPE = "AUDIO_WAKEUP_1_5";
-static const std::string WAKEUP_CONFORMER_DOMAIN_ID = "7";
+static constexpr int64_t SEC_PER_DAY = 86400;
 
 WakeupEngineImpl::WakeupEngineImpl() : ModuleStates(State(IDLE), "WakeupEngineImpl", "WakeupThread"),
-    TaskExecutor(WAKEUP_THREAD_NAME, MAX_WAKEUP_TASK_NUM)
+    TaskExecutor(WAKEUP_THREAD_NAME, MAX_WAKEUP_TASK_NUM), BaseWakeupEngineImpl()
 {
-    InitStates();
+}
+ 
+bool WakeupEngineImpl::Init()
+{
+    INTELL_VOICE_LOG_INFO("enter");
+    if (!InitStates()) {
+        INTELL_VOICE_LOG_ERROR("init state failed");
+        return false;
+    }
     capturerOptions_.streamInfo.samplingRate = AudioSamplingRate::SAMPLE_RATE_16000;
     capturerOptions_.streamInfo.encoding = AudioEncodingType::ENCODING_PCM;
     capturerOptions_.streamInfo.format = AudioSampleFormat::SAMPLE_S16LE;
@@ -69,8 +81,10 @@ WakeupEngineImpl::WakeupEngineImpl() : ModuleStates(State(IDLE), "WakeupEngineIm
         std::bind(&WakeupEngineImpl::OnWakeupEvent, this, std::placeholders::_1));
     if (adapterListener_ == nullptr) {
         INTELL_VOICE_LOG_ERROR("adapterListener_ is nullptr");
+        return false;
     }
     TaskExecutor::StartThread();
+    return true;
 }
 
 WakeupEngineImpl::~WakeupEngineImpl()
@@ -98,21 +112,24 @@ bool WakeupEngineImpl::InitStates()
 
     ForState(RECOGNIZING)
         .WaitUntil(RECOGNIZING_TIMEOUT,
-            std::bind(&WakeupEngineImpl::HandleRecognizingTimeout, this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&WakeupEngineImpl::HandleRecognizingTimeout, this,
+                std::placeholders::_1, std::placeholders::_2),
             RECOGNIZING_TIMEOUT_US)
         .ACT(STOP_RECOGNIZE, HandleStop)
         .ACT(RECOGNIZE_COMPLETE, HandleRecognizeComplete);
 
     ForState(RECOGNIZED)
         .WaitUntil(RECOGNIZE_COMPLETE_TIMEOUT,
-            std::bind(&WakeupEngineImpl::HandleStopCapturer, this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&WakeupEngineImpl::HandleStopCapturerTimeout, this, std::placeholders::_1,
+                std::placeholders::_2, OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_RECOGNIZED_COMPLETE),
             RECOGNIZE_COMPLETE_TIMEOUT_US)
         .ACT(GET_WAKEUP_PCM, HandleGetWakeupPcm)
         .ACT(START_CAPTURER, HandleStartCapturer);
 
     ForState(READ_CAPTURER)
         .WaitUntil(READ_CAPTURER_TIMEOUT,
-            std::bind(&WakeupEngineImpl::HandleStopCapturer, this, std::placeholders::_1, std::placeholders::_2),
+            std::bind(&WakeupEngineImpl::HandleStopCapturerTimeout, this, std::placeholders::_1,
+                std::placeholders::_2, OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_ONESHOT_PROCESSE),
             READ_CAPTURER_TIMEOUT_US)
         .ACT(READ, HandleRead)
         .ACT(STOP_CAPTURER, HandleStopCapturer);
@@ -308,6 +325,7 @@ void WakeupEngineImpl::DestroyWakeupSourceStopCallback()
 
 bool WakeupEngineImpl::StartAudioSource()
 {
+    pcmReadCnt_ = 0;
     capturerOptions_.streamInfo.channels = GetWakeupSourceChannel();
     auto listener = std::make_unique<AudioSourceListener>(
         [&](uint8_t *buffer, uint32_t size, bool isEnd) {
@@ -315,6 +333,7 @@ bool WakeupEngineImpl::StartAudioSource()
         },
         [&]() {
             INTELL_VOICE_LOG_INFO("end of pcm");
+            audioSourceEnd_ = get_current_time_ms();
             if (adapter_ != nullptr) {
                 adapter_->SetParameter("end_of_pcm=true");
             }
@@ -340,7 +359,7 @@ bool WakeupEngineImpl::StartAudioSource()
         WakeupSourceProcess::Release();
         return false;
     }
-
+    audioSourceStart_ = get_current_time_ms();
     return true;
 }
 
@@ -386,9 +405,40 @@ void WakeupEngineImpl::OnWakeupRecognition(int32_t result, const std::string &in
     event.msgId = INTELL_VOICE_ENGINE_MSG_RECOGNIZE_COMPLETE;
     event.result = static_cast<OHOS::HDI::IntelligentVoice::Engine::V1_0::IntellVoiceEngineErrors>(result);
     event.info = info;
+    WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_RECOGNIZED,
+        OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END); 
     StateMsg msg(RECOGNIZE_COMPLETE, reinterpret_cast<void *>(&event),
         sizeof(OHOS::HDI::IntelligentVoice::Engine::V1_0::IntellVoiceEngineCallBackEvent));
     Handle(msg);
+}
+
+std::string WakeupEngineImpl::SetTriggerParameter(const std::string &keyValueList)
+{
+    HistoryInfoMgr &historyInfoMgr = HistoryInfoMgr::GetInstance();
+    std::map<std::string, std::string> kvpairs;
+    IntellVoiceUtil::SplitStringToKVPair(keyValueList, kvpairs);
+    
+    std::vector<std::string> processedKeys;
+    
+    for (const auto &pair : kvpairs) {
+        if (std::find(TRIGGER_PARAMS.begin(), TRIGGER_PARAMS.end(), pair.first) != TRIGGER_PARAMS.end()) {
+            INTELL_VOICE_LOG_INFO("set trigger %{public}s:%{public}s", pair.first.c_str(), pair.second.c_str());
+            historyInfoMgr.SetStringKVPair(pair.first, pair.second);
+            EngineCallbackMessage::CallFunc(TRIGGERMGR_SET_PARAMETER, pair.first, pair.second);
+            processedKeys.push_back(pair.first);
+        }
+    }
+
+    std::string newKeyValueList;
+    for (const auto &pair : kvpairs) {
+        if (std::find(processedKeys.begin(), processedKeys.end(), pair.first) == processedKeys.end()) {
+            if (!newKeyValueList.empty()) {
+                newKeyValueList += ";";
+            }
+            newKeyValueList += pair.first + "=" + pair.second;
+        }
+    }
+    return newKeyValueList;
 }
 
 int32_t WakeupEngineImpl::HandleSetParam(const StateMsg &msg, State & /* nextState */)
@@ -398,8 +448,11 @@ int32_t WakeupEngineImpl::HandleSetParam(const StateMsg &msg, State & /* nextSta
         INTELL_VOICE_LOG_INFO("param is nullptr");
         return -1;
     }
-
-    return EngineUtil::SetParameter(param->strParam);
+    std::string engineParams = SetTriggerParameter(param->strParam);
+    if (!engineParams.empty()) {
+        return EngineUtil::SetParameter(engineParams);
+    }
+    return 0;
 }
 
 int32_t WakeupEngineImpl::HandleGetParam(const StateMsg &msg, State & /* nextState */)
@@ -419,6 +472,27 @@ int32_t WakeupEngineImpl::HandleGetParam(const StateMsg &msg, State & /* nextSta
             value->strParam = "false";
         } else {
             value->strParam = adapterListener_->GetCallbackStatus();
+        }
+    } else if (key->strParam == WAKEUP_TIMESTAMP) {
+        auto ret = EngineCallbackMessage::CallFunc(TRIGGERMGR_GET_PARAMETER, WAKEUP_TIMESTAMP);
+        std::string timestamp = "";
+        if (ret.has_value()) {
+            try {
+                timestamp = std::any_cast<std::string>(*ret);
+            } catch (const std::bad_any_cast&) {
+                INTELL_VOICE_LOG_ERROR("msg bus bad any cast");
+                return -1;
+            }
+        } else {
+            INTELL_VOICE_LOG_ERROR("msg bus return no value");
+            return -1;
+        }
+        value->strParam = timestamp + EngineUtil::GetParameter(WAKEUP_TIMESTAMP);
+        if (audioSourceStart_ != 0 && audioSourceEnd_ != 0) {
+            value->strParam += TIMESTAMP_SOURCE_START + ":" + std::to_string(audioSourceStart_) + ";" 
+                + TIMESTAMP_SOURCE_END + ":" + std::to_string(audioSourceEnd_) + ";";
+            audioSourceStart_ = 0;
+            audioSourceEnd_ = 0;
         }
     } else {
         value->strParam = EngineUtil::GetParameter(key->strParam);
@@ -444,6 +518,7 @@ int32_t WakeupEngineImpl::HandleInit(const StateMsg & /* msg */, State &nextStat
     EngineUtil::SetLanguage();
     EngineUtil::SetArea();
     EngineUtil::SetSensibility();
+    EngineUtil::SetTriggerParameter();
     EngineUtil::SetImproveParam();
     SetDspFeatures();
 
@@ -474,6 +549,9 @@ int32_t WakeupEngineImpl::HandleInitDone(const StateMsg &msg, State &nextState)
         INTELL_VOICE_LOG_ERROR("init done failed");
         return -1;
     }
+    std::thread([]() {
+        IntellVoiceUtil::SendCommonEvent("wakeupEngineInited");
+    }).detach();
 
     nextState = State(INITIALIZED);
     return 0;
@@ -494,40 +572,50 @@ int32_t WakeupEngineImpl::HandleSetListener(const StateMsg &msg, State & /* next
 int32_t WakeupEngineImpl::HandleStart(const StateMsg &msg, State &nextState)
 {
     int32_t *msgBody = reinterpret_cast<int32_t *>(msg.inMsg);
+    WakeupErrorCode errCode = OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END;
+    std::string multiChannelValue = EngineUtil::GetParameter(WAKEUP_MULTI_CHANNEL);
+    isMultiChannel_ = (multiChannelValue == "true");
+    INTELL_VOICE_LOG_INFO("isMultiChannel_ is %{public}d", isMultiChannel_);
+
     if (msgBody == nullptr) {
         INTELL_VOICE_LOG_ERROR("msgBody is nullptr");
-        return -1;
+        errCode = OHOS::IntellVoiceUtils::SA_INPUT_ERROR;
+        goto err;
     }
 
     if (*msgBody == PROXIMAL_WAKEUP_MODEL_UUID) {
         channelId_ = CHANNEL_ID_1;
+        WakeupSourceProcess::SetReadBufferFlag(false);
         EngineUtil::SetParameter("WakeupType=3");
     } else {
         channelId_ = CHANNEL_ID_0;
+        WakeupSourceProcess::SetReadBufferFlag(true);
         EngineUtil::SetParameter("WakeupType=0");
     }
     INTELL_VOICE_LOG_INFO("enter, channel id is %{public}d", channelId_);
 
-    EngineUtil::SetParameter("VprTrdType=0;WakeupScene=0");
     EngineUtil::SetScreenStatus();
 
     if (adapter_ == nullptr) {
         INTELL_VOICE_LOG_ERROR("adapter is nullptr");
-        return -1;
+        errCode = OHOS::IntellVoiceUtils::SA_HOST_ERROR;
+        goto err;
     }
-
-    StartInfo info = {
-        .isLast = true,
-    };
-    if (adapter_->Start(info)) {
-        INTELL_VOICE_LOG_ERROR("start adapter failed");
-        return -1;
+    {
+        StartInfo info = {
+            .isLast = true,
+        };
+        if (adapter_->Start(info)) {
+            INTELL_VOICE_LOG_ERROR("start adapter failed");
+            errCode = OHOS::IntellVoiceUtils::SA_HOST_ERROR;
+            goto err;
+        }
     }
-
     if (!CreateWakeupSourceStopCallback()) {
         INTELL_VOICE_LOG_ERROR("create wakeup source stop callback failed");
         adapter_->Stop();
-        return -1;
+        errCode = OHOS::IntellVoiceUtils::SA_HOST_ERROR;
+        goto err;
     }
 
     SetParamOnAudioStart(*msgBody);
@@ -536,12 +624,20 @@ int32_t WakeupEngineImpl::HandleStart(const StateMsg &msg, State &nextState)
         INTELL_VOICE_LOG_ERROR("start audio source failed");
         SetParamOnAudioStop();
         adapter_->Stop();
-        return -1;
+        errCode = OHOS::IntellVoiceUtils::SA_AUDIO_SOURCE_ERROR;
+        goto err;
     }
 
     INTELL_VOICE_LOG_INFO("exit");
     nextState = State(RECOGNIZING);
+    WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_HANDLE_DETECTED,
+        OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END); 
     return 0;
+
+err:
+    WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_HANDLE_DETECTED,
+        OHOS::IntellVoiceUtils::WAKEUP_RESULT_FAIL, errCode); 
+    return -1;
 }
 
 int32_t WakeupEngineImpl::HandleStop(const StateMsg & /* msg */, State &nextState)
@@ -579,6 +675,8 @@ int32_t WakeupEngineImpl::HandleRecognizeComplete(const StateMsg &msg, State &ne
 int32_t WakeupEngineImpl::HandleStartCapturer(const StateMsg &msg, State &nextState)
 {
     INTELL_VOICE_LOG_INFO("enter");
+    WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_ONESHOT_START,
+        OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END); 
     auto ret = IntellVoiceUtil::VerifySystemPermission(OHOS_MICROPHONE_PERMISSION);
     if (ret != INTELLIGENT_VOICE_SUCCESS) {
         return ret;
@@ -619,11 +717,22 @@ int32_t WakeupEngineImpl::HandleRead(const StateMsg &msg, State & /* nextState *
     return 0;
 }
 
+int32_t WakeupEngineImpl::HandleStopCapturerTimeout(const StateMsg & msg, State &nextState,
+    OHOS::IntellVoiceUtils::StageCode stageCode)
+{
+    WakeupTrack::reportWakeupTrack(stageCode, OHOS::IntellVoiceUtils::WAKEUP_RESULT_FAIL, 
+        OHOS::IntellVoiceUtils::SA_TIMEOUT_ERROR); 
+    return HandleStopCapturer(msg, nextState);
+}
+
 int32_t WakeupEngineImpl::HandleStopCapturer(const StateMsg & /* msg */, State &nextState)
 {
     INTELL_VOICE_LOG_INFO("enter");
+    WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_ONESHOT_END,
+        OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END); 
     StopAudioSource();
     EngineUtil::Stop();
+    adapterListener_->ClearBackupEvent();
     if (CurrState() == State(READ_CAPTURER)) {
         IntellVoiceUtil::RecordPermissionPrivacy(OHOS_MICROPHONE_PERMISSION, callerTokenId_,
             INTELL_VOICE_PERMISSION_STOP);
@@ -635,6 +744,8 @@ int32_t WakeupEngineImpl::HandleStopCapturer(const StateMsg & /* msg */, State &
 int32_t WakeupEngineImpl::HandleRecognizingTimeout(const StateMsg & /* msg */, State &nextState)
 {
     INTELL_VOICE_LOG_INFO("enter");
+    WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_RECOGNIZING,
+        OHOS::IntellVoiceUtils::WAKEUP_RESULT_FAIL, OHOS::IntellVoiceUtils::SA_TIMEOUT_ERROR); 
     StopAudioSource();
     EngineUtil::Stop();
     nextState = State(INITIALIZED);
@@ -707,22 +818,24 @@ int32_t WakeupEngineImpl::HandleRelease(const StateMsg & /* msg */, State &nextS
     return 0;
 }
 
+bool WakeupEngineImpl::GetSwitchStatus(const std::string& key) {
+    auto ret = EngineCallbackMessage::CallFunc(QUERY_SWITCH_STATUS, key);
+    if (!ret.has_value()) {
+        INTELL_VOICE_LOG_ERROR("msg bus return no value");
+        return false;
+    }
+    try {
+        return std::any_cast<bool>(*ret);
+    } catch (const std::bad_any_cast&) {
+        INTELL_VOICE_LOG_ERROR("msg bus bad any cast");
+        return false;
+    }
+}
+
 void WakeupEngineImpl::SetWakeupModel()
 {
-    auto ret = EngineCallbackMessage::CallFunc(QUERY_SWITCH_STATUS, SHORTWORD_KEY);
-    bool switchstatus = false;
-    if (ret.has_value()) {
-        try {
-            switchstatus = std::any_cast<bool>(*ret);
-        } catch (const std::bad_any_cast&) {
-            INTELL_VOICE_LOG_ERROR("msg bus bad any cast");
-            return;
-        }
-    } else {
-        INTELL_VOICE_LOG_ERROR("msg bus return no value");
-        return;
-    }
-    if (switchstatus) {
+    if (IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_SHORT_WORD)
+        && GetSwitchStatus(SHORTWORD_KEY)) {
         adapter_->SetParameter("WakeupMode=1");
     } else {
         adapter_->SetParameter("WakeupMode=0");
@@ -731,58 +844,26 @@ void WakeupEngineImpl::SetWakeupModel()
 
 void WakeupEngineImpl::UpdateDspModel()
 {
-    auto ret = EngineCallbackMessage::CallFunc(QUERY_SWITCH_STATUS, SHORTWORD_KEY);
-    bool switchstatus = false;
-    if (ret.has_value()) {
-        try {
-            switchstatus = std::any_cast<bool>(*ret);
-        } catch (const std::bad_any_cast&) {
-            INTELL_VOICE_LOG_ERROR("msg bus bad any cast");
-            return;
+    if (IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_SHORT_WORD)) {
+        if (GetSwitchStatus(SHORTWORD_KEY)) {
+            SwingServiceWrapper::GetInstance().SubscribeSwingEvent(SHORT_WORD_EVENT_TYPE, SHORT_WORD_DOMAIN_ID);
+            ProcDspModel(ReadDspModel(static_cast<OHOS::HDI::IntelligentVoice::Engine::V1_0::ContentType>(
+                OHOS::HDI::IntelligentVoice::Engine::V1_2::SHORT_WORD_DSP_MODEL)));
+        } else {
+            SwingServiceWrapper::GetInstance().UnSubscribeSwingEvent(SHORT_WORD_EVENT_TYPE, SHORT_WORD_DOMAIN_ID);
+            ProcDspModel(ReadDspModel(OHOS::HDI::IntelligentVoice::Engine::V1_0::DSP_MODLE));
+        }
+    } else if (IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_DUAL_MIC)) {
+        if (GetSwitchStatus(DUALMIC_KEY)) {
+            SwingServiceWrapper::GetInstance().SubscribeSwingEvent(DUAL_MIC_EVENT_TYPE, DUAL_MIC_DOMAIN_ID);
+            ProcDspModel(ReadDspModel(OHOS::HDI::IntelligentVoice::Engine::V1_0::DSP_MODLE));
+        } else {
+            SwingServiceWrapper::GetInstance().UnSubscribeSwingEvent(DUAL_MIC_EVENT_TYPE, DUAL_MIC_DOMAIN_ID);
+            ProcDspModel(ReadDspModel(OHOS::HDI::IntelligentVoice::Engine::V1_0::DSP_MODLE));
         }
     } else {
-        INTELL_VOICE_LOG_ERROR("msg bus return no value");
-        return;
-    }
-
-    if (switchstatus) {
-        SubscribeSwingEvent();
-        ProcDspModel(ReadDspModel(static_cast<OHOS::HDI::IntelligentVoice::Engine::V1_0::ContentType>(
-            OHOS::HDI::IntelligentVoice::Engine::V1_2::SHORT_WORD_DSP_MODEL)));
-    } else {
-        UnSubscribeSwingEvent();
         ProcDspModel(ReadDspModel(OHOS::HDI::IntelligentVoice::Engine::V1_0::DSP_MODLE));
     }
-}
-
-void WakeupEngineImpl::SubscribeSwingEvent()
-{
-    INTELL_VOICE_LOG_INFO("enter");
-    isSubscribeSwingEvent_.store(true);
-    int32_t ret = SwingServiceWrapper::GetInstance().SubscribeSwingEvent(WAKEUP_CONFORMER_EVENT_TYPE,
-        WAKEUP_CONFORMER_DOMAIN_ID);
-    if (ret != 0) {
-        INTELL_VOICE_LOG_ERROR("load tiny model failed: %{public}d", ret);
-        return;
-    }
-    INTELL_VOICE_LOG_INFO("load tiny model");
-}
-
-void WakeupEngineImpl::UnSubscribeSwingEvent()
-{
-    INTELL_VOICE_LOG_INFO("enter");
-    if (!isSubscribeSwingEvent_.load()) {
-        INTELL_VOICE_LOG_INFO("no need to UnSubscribeSwingEvent.");
-        return;
-    }
-    isSubscribeSwingEvent_.store(false);
-    int32_t ret = SwingServiceWrapper::GetInstance().UnSubscribeSwingEvent(WAKEUP_CONFORMER_EVENT_TYPE,
-        WAKEUP_CONFORMER_DOMAIN_ID);
-    if (ret != 0) {
-        INTELL_VOICE_LOG_ERROR("unload tiny model failed: %{public}d", ret);
-        return;
-    }
-    INTELL_VOICE_LOG_INFO("unload tiny model");
 }
 
 std::string WakeupEngineImpl::GetWakeupPhrase()
@@ -794,6 +875,21 @@ std::string WakeupEngineImpl::GetWakeupPhrase()
     }
 
     return wakeupPhrase;
+}
+
+void WakeupEngineImpl::PrintFirstFrameInfo(const std::vector<uint8_t> &channelData)
+{
+    static constexpr size_t MIN_INFO_SIZE = 15; // offset 14 + sizeof(uint8_t)
+    if (channelData.size() < MIN_INFO_SIZE) {
+        return;
+    }
+    const auto *bytes = channelData.data();
+    int16_t sentenceBegin = *reinterpret_cast<const int16_t *>(bytes + 0);
+    int16_t sentenceEnd = *reinterpret_cast<const int16_t *>(bytes + 2);
+    uint16_t dspType = *reinterpret_cast<const uint16_t *>(bytes + 8);
+    uint8_t wakeupType = bytes[14];
+    INTELL_VOICE_LOG_INFO("%{public}s wakeup trigger, wakeup type:%{public}u, extend frame:%{public}d, end frame:%{public}d",
+        (dspType == 1) ? "normal" : "lp", wakeupType, sentenceBegin, sentenceEnd);
 }
 
 void WakeupEngineImpl::ReadBufferCallback(uint8_t *buffer, uint32_t size, bool isEnd)
@@ -812,10 +908,65 @@ void WakeupEngineImpl::ReadBufferCallback(uint8_t *buffer, uint32_t size, bool i
             data.insert(data.end(), audioData[CHANNEL_ID_1].begin(), audioData[CHANNEL_ID_1].end());
             adapter_->WriteAudio(data);
         } else {
-            adapter_->WriteAudio(audioData[channelId_]);
+            if (isMultiChannel_ && (audioData.size() == CHANNEL_CNT_FOUR)) {
+                if (pcmReadCnt_ == 0) {
+                    PrintFirstFrameInfo(audioData[CHANNEL_ID_0]);
+                }
+                std::vector<uint8_t> data(audioData[CHANNEL_ID_0].begin(), audioData[CHANNEL_ID_0].end());
+                data.insert(data.end(), audioData[CHANNEL_ID_1].begin(), audioData[CHANNEL_ID_1].end());
+                data.insert(data.end(), audioData[CHANNEL_ID_3].begin(), audioData[CHANNEL_ID_3].end());
+                adapter_->WriteAudio(data);
+            } else {
+                if (pcmReadCnt_ == 0) {
+                    PrintFirstFrameInfo(audioData[channelId_]);
+                }
+                adapter_->WriteAudio(audioData[channelId_]);
+            }
         }
+        pcmReadCnt_++;
     }
     WakeupSourceProcess::Write(audioData);
+}
+
+bool WakeupEngineImpl::Create(std::shared_ptr<StateInfoListener> stateListener)
+{
+    ModuleStates::SetStateListener(stateListener);
+    return Init();
+}
+
+void WakeupEngineImpl::OnTriggerDetected(int32_t uuid, const std::shared_ptr<WakeupDeviceDetail>& wakeupDevice,
+    const EventDetail &event)
+{
+    (void)event;
+    std::string eventStr = GetEventValue(uuid);
+    std::thread([eventStr, macAddress = wakeupDevice->macAddress, parameters = wakeupDevice->parameters]() {
+        IntellVoiceUtil::StartAbilityOnDetected(eventStr, macAddress, parameters);
+    }).detach();
+    StateMsg msg(START_RECOGNIZE, &uuid, sizeof(int32_t));
+    if (Handle(msg) != 0) {
+        INTELL_VOICE_LOG_WARN("start failed");
+        EngineCallbackMessage::CallFunc(HANDLE_CLOSE_WAKEUP_SOURCE, true);
+    }
+}
+
+std::string WakeupEngineImpl::GetEventValue(int32_t uuid)
+{
+    if (uuid == PROXIMAL_WAKEUP_MODEL_UUID) {
+        ModuleStates::SetProcessType(PROCESS_WISPHER_PHONE);
+        return "whisper_event";
+    }
+    ModuleStates::SetProcessType(PROCESS_WAKEUP_PHONE);
+    return "recognition_event";
+}
+
+uint32_t WakeupEngineImpl::get_current_time_ms()
+{
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+ 
+    int64_t sec = tv.tv_sec;
+    int64_t day_sec = sec % SEC_PER_DAY;
+    return day_sec * 1000 + tv.tv_usec / 1000;
 }
 
 #ifdef SUPPORT_WINDOW_MANAGER

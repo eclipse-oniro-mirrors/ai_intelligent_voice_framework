@@ -35,6 +35,7 @@ public:
     std::string GetCallbackStatus();
     void OnIntellVoiceHdiEvent(
         const OHOS::HDI::IntelligentVoice::Engine::V1_0::IntellVoiceEngineCallBackEvent &event) override;
+    void ClearBackupEvent();
     void Notify(const OHOS::HDI::IntelligentVoice::Engine::V1_0::IntellVoiceEngineCallBackEvent &event);
 
 private:

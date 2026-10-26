@@ -15,11 +15,14 @@
 
 #include "intell_voice_service_stub.h"
 #include "intell_voice_log.h"
+#include "i_device_wakeup.h"
 
 #define LOG_TAG "IntellVoiceServiceStub"
 
 namespace OHOS {
 namespace IntellVoiceEngine {
+static constexpr uint32_t FILE_SIZE_MAX = (10 * 1024 * 1024);
+
 IntellVoiceServiceStub::IntellVoiceServiceStub()
 {
     processServiceFuncMap_[HDI_INTELL_VOICE_SERVICE_CREATE_ENGINE] = [this](MessageParcel &data,
@@ -42,6 +45,10 @@ IntellVoiceServiceStub::IntellVoiceServiceStub()
         MessageParcel &reply) -> int32_t { return this->SetParameterInner(data, reply); };
     processServiceFuncMap_[HDI_INTELL_VOICE_SERVICE_CLEAR_USER_DATA] = [this](MessageParcel &data,
         MessageParcel &reply) -> int32_t { return this->ClearUserDataInner(data, reply); };
+    processServiceFuncMap_[HDI_INTELL_VOICE_SERVICE_REGISTER_DEVICE] = [this](MessageParcel &data,
+        MessageParcel &reply) -> int32_t { return this->RegisterDeviceInner(data, reply); };
+    processServiceFuncMap_[HDI_INTELL_VOICE_SERVICE_DEREGISTER_DEVICE] = [this](MessageParcel &data,
+        MessageParcel &reply) -> int32_t { return this->DeregisterDeviceInner(data, reply); };
 }
 
 IntellVoiceServiceStub::~IntellVoiceServiceStub()
@@ -57,7 +64,7 @@ int32_t IntellVoiceServiceStub::CreateEngineInner(MessageParcel &data, MessagePa
     IntellVoiceEngineType type = static_cast<IntellVoiceEngineType>(data.ReadInt32());
     auto obj = data.ReadRemoteObject();
     RegisterDeathRecipient(type, obj);
-    if (type == INTELL_VOICE_HEADSET_WAKEUP) {
+    if (type == INTELL_VOICE_HEADSET_WAKEUP || type == INTELL_VOICE_DEVICE) {
         type = INTELL_VOICE_WAKEUP;
     }
     ret = CreateIntellVoiceEngine(type, engine);
@@ -167,7 +174,7 @@ int32_t IntellVoiceServiceStub::SendCloneFileInner(MessageParcel &data, MessageP
     std::string filePath = data.ReadString();
     std::vector<uint8_t> buffer;
     uint32_t size = data.ReadUint32();
-    if (size == 0) {
+    if (size == 0 || size >= FILE_SIZE_MAX) {
         INTELL_VOICE_LOG_ERROR("invalid size");
         return -1;
     }
@@ -199,6 +206,36 @@ int32_t IntellVoiceServiceStub::CloneForResultInner(MessageParcel &data, Message
 int32_t IntellVoiceServiceStub::ClearUserDataInner(MessageParcel &data, MessageParcel &reply)
 {
     int32_t ret = ClearUserData();
+    reply.WriteInt32(ret);
+    return ret;
+}
+
+int32_t IntellVoiceServiceStub::RegisterDeviceInner(MessageParcel &data, MessageParcel &reply)
+{
+    const std::string macAddress = data.ReadString();
+    WakeupDeviceInfo wakeupDeviceInfo;
+    wakeupDeviceInfo.type = static_cast<WakeupDeviceType>(data.ReadUint32());
+    wakeupDeviceInfo.serviceName = data.ReadString();
+    wakeupDeviceInfo.parameters = data.ReadString();
+    auto obj = data.ReadRemoteObject();
+    if (!RegisterDeviceDeathRecipient(wakeupDeviceInfo.serviceName, obj)) {
+        INTELL_VOICE_LOG_ERROR("failed to register device deathRecipient, service:%{public}s",
+            wakeupDeviceInfo.serviceName.c_str());
+        return -1;
+    }
+    int32_t ret = RegisterDeviceWakeupInfo(macAddress, wakeupDeviceInfo);
+    reply.WriteInt32(ret);
+    if (ret != 0) {
+        INTELL_VOICE_LOG_ERROR("failed to register device, service:%{public}s", wakeupDeviceInfo.serviceName.c_str());
+        return ret;
+    }
+    return ret;
+}
+ 
+int32_t IntellVoiceServiceStub::DeregisterDeviceInner(MessageParcel &data, MessageParcel &reply)
+{
+    const std::string macAddress = data.ReadString();
+    int32_t ret = DeregisterDeviceWakeupInfo(macAddress);
     reply.WriteInt32(ret);
     return ret;
 }

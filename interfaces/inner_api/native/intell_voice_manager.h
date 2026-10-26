@@ -29,6 +29,7 @@ namespace OHOS {
 namespace IntellVoice {
 using OHOS::IntellVoiceEngine::IntellVoiceEngineType;
 using OHOS::IntellVoiceEngine::IIntellVoiceEngine;
+using OHOS::IntellVoiceEngine::WakeupDeviceInfo;
 
 struct UploadFilesInfo {
     int32_t type;
@@ -48,6 +49,8 @@ public:
 
     int32_t RegisterServiceDeathRecipient(sptr<OHOS::IRemoteObject::DeathRecipient> callback);
     int32_t DeregisterServiceDeathRecipient(sptr<OHOS::IRemoteObject::DeathRecipient> callback);
+    int32_t RegisterDeviceWakeupInfo(const std::string &macAddress, const WakeupDeviceInfo &info);
+    int32_t DeregisterDeviceWakeupInfo(const std::string &macAddress);
     int32_t GetUploadFiles(int numMax, std::vector<UploadFilesInfo> &reportedFilesInfo);
 
     int32_t SetParameter(const std::string &key, const std::string &value);

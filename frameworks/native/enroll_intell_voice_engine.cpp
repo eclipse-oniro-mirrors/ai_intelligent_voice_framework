@@ -68,8 +68,15 @@ int32_t EnrollIntellVoiceEngine::Init(const EngineConfig &config)
 
     engine_->SetParameter("language=" + config.language);
     engine_->SetParameter("area=" + config.region);
+    if (!config.enrollScenario.empty()) {
+        engine_->SetParameter("enrollScenario=" + config.enrollScenario);
+    }
 
     IntellVoiceEngineInfo info = {};
+    if (descriptor_ == nullptr) {
+        INTELL_VOICE_LOG_ERROR("descriptor_ is nullptr");
+        return -1;
+    }
     info.wakeupPhrase = descriptor_->wakeupPhrase;
     info.isPcmFromExternal = false;
     info.minBufSize = MIN_BUFFER_SIZE;

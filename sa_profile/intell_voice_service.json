@@ -8,6 +8,7 @@
             "auto-restart": true,
             "distributed": false,
             "dump_level": 1,
+            "min_hdi_proxy_version": ["libintell_voice_engine_proxy_1.2.z.so"],
             "start-on-demand": {
                 "commonevent": [
                     {

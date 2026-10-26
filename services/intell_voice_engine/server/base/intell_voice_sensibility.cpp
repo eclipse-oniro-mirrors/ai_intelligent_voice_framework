@@ -61,7 +61,7 @@ std::string IntellVoiceSensibility::ParseWakeupConfigDspSensibility(const std::s
 {
     std::ifstream jsonStrm(configPath);
     if (!jsonStrm.is_open()) {
-        INTELL_VOICE_LOG_ERROR("open file faile!");
+        INTELL_VOICE_LOG_ERROR("open file fail!");
         return "";
     }
     Json::Value wakeupJson;
@@ -69,7 +69,7 @@ std::string IntellVoiceSensibility::ParseWakeupConfigDspSensibility(const std::s
     reader["collectComments"] = false;
     std::string errs;
     if (!parseFromStream(reader, jsonStrm, &wakeupJson, &errs)) {
-        INTELL_VOICE_LOG_ERROR("parseFromStream json faile!");
+        INTELL_VOICE_LOG_ERROR("parseFromStream json fail!");
         return "";
     }
 

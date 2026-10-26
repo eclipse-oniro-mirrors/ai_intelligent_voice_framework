@@ -37,10 +37,17 @@ public:
     void AttachTelephonyObserver();
     void DetachTelephonyObserver();
 #endif
-    void AttachAudioCaptureListener();
-    void DetachAudioCaptureListener();
     void AttachAudioRendererEventListener();
     void DetachAudioRendererEventListener();
+#ifdef SUPPORT_RECORD_WAKEUP_CONCURRENT
+    void AttachAudioCapturerEventListener();
+    void DetachAudioCapturerEventListener();
+    void ClearConcurrentControlList(bool isWhiteList, bool isBlackList);
+#else
+    void AttachAudioCaptureListener();
+    void DetachAudioCaptureListener();
+#endif
+
 #ifdef POWER_MANAGER_ENABLE
     void AttachHibernateObserver();
     void DetachHibernateObserver();
@@ -51,6 +58,10 @@ public:
 #endif
     void AttachAudioSceneEventListener();
     void DetachAudioSceneEventListener();
+#ifdef SUPPORT_FAN_STATUS_LISTEN
+    void AttachFanStateListener();
+    void DetachFanStateListener();
+#endif
 
 private:
     std::shared_ptr<TriggerHelper> triggerHelper_ = nullptr;

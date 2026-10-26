@@ -274,6 +274,15 @@ napi_value EnrollIntellVoiceEngineNapi::Init(napi_env env, napi_callback_info in
         status = GetValue(env, temp,
             reinterpret_cast<EnrollIntellVoiceEngineNapi *>(context->instanceNapi_)->config_.region);
         CHECK_CONDITION_RETURN_FALSE((status != napi_ok), "get region failed");
+        status = napi_get_named_property(env, argv[0], "enrollScenario", &temp);
+        CHECK_CONDITION_RETURN_FALSE((status != napi_ok), "get property failed");
+        status = GetValue(env, temp,
+            reinterpret_cast<EnrollIntellVoiceEngineNapi *>(context->instanceNapi_)->config_.enrollScenario);
+        if (status != napi_ok) {
+            INTELL_VOICE_LOG_WARN("get property enrollScenario failed, using default");
+            reinterpret_cast<EnrollIntellVoiceEngineNapi *>(context->instanceNapi_)->
+                config_.enrollScenario = "";
+        }
         return true;
     };
 
@@ -359,9 +368,14 @@ napi_value EnrollIntellVoiceEngineNapi::Stop(napi_env env, napi_callback_info in
     context->result_ = (context->GetCbInfo(env, info, cbIndex, nullptr) ? NAPI_INTELLIGENT_VOICE_SUCCESS :
         NAPI_INTELLIGENT_VOICE_INVALID_PARAM);
 
-    auto cb = reinterpret_cast<EnrollIntellVoiceEngineNapi *>(context->instanceNapi_)->callbackNapi_;
-    if (cb != nullptr) {
-        cb->ClearAsyncWork(false, "the requests was aborted because user called stop");
+    if (context->instanceNapi_ == nullptr) {
+        INTELL_VOICE_LOG_ERROR("instanceNapi_ is nullptr");
+        context->result_ = NAPI_INTELLIGENT_VOICE_INVALID_PARAM;
+    } else {
+        auto cb = reinterpret_cast<EnrollIntellVoiceEngineNapi *>(context->instanceNapi_)->callbackNapi_;
+        if (cb != nullptr) {
+            cb->ClearAsyncWork(false, "the requests was aborted because user called stop");
+        }
     }
 
     AsyncExecute execute;

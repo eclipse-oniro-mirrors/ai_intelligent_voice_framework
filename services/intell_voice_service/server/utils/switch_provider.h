@@ -27,12 +27,14 @@ public:
     void RegisterObserver(const sptr<SwitchObserver> &observer, const std::string &key);
     void UnregisterObserver(const sptr<SwitchObserver> &observer, const std::string &key);
     bool QuerySwitchStatus(const std::string &key);
+    void QueryAndLogReason();
     bool IsSwitchError(const std::string &key);
     static bool CheckIfDataShareReady();
 
 private:
     SwitchProvider();
     ~SwitchProvider();
+    std::shared_ptr<DataShare::DataShareResultSet> QueryWithRetry(const std::string &key);
 
     std::shared_ptr<DataShare::DataShareHelper> helper_ = nullptr;
     friend class IntellVoiceUtils::UniquePtrFactory<SwitchProvider>;

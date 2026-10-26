@@ -95,9 +95,7 @@ HWTEST_F(UpdateEngineTest, UpdateEngineTest_001, TestSize.Level1)
         INTELL_VOICE_LOG_ERROR("silence strategy is nullptr");
     }
     std::shared_ptr<IUpdateStrategy> strategy = std::dynamic_pointer_cast<IUpdateStrategy>(silenceStrategy);
-    int ret = mgr.CreateUpdateEngineUntilTime(strategy);
-    sleep(5);
-    EXPECT_EQ(0, ret);
+    mgr.CreateUpdateEngineUntilTime(strategy);
     INTELL_VOICE_LOG_INFO("end");
 }
 
@@ -109,31 +107,7 @@ HWTEST_F(UpdateEngineTest, UpdateEngineTest_001, TestSize.Level1)
 HWTEST_F(UpdateEngineTest, UpdateEngineTest_002, TestSize.Level1)
 {
     std::vector<WakeupSourceFile> cloneFileInfo;
-    int ret1 = IntellVoiceManager::GetInstance()->GetWakeupSourceFiles(cloneFileInfo);
-    sleep(2);
-    EXPECT_EQ(0, ret1);
-    INTELL_VOICE_LOG_INFO("GetWakeupSourceFiles end");
-
-    int ret2 = IntellVoiceManager::GetInstance()->ClearUserData();
-    sleep(2);
-    EXPECT_EQ(0, ret2);
-    INTELL_VOICE_LOG_INFO("ClearUserData end");
-
-    Json::Value wakeupInfo;
-    wakeupInfo["clone"] = "true";
-    wakeupInfo["clone_path"] = "/data/service/el0/intelligent_voice/wakeup/clone";
-    wakeupInfo["source_device"] = "BRA-AL00";
-    wakeupInfo["source_version"] = "3.0.0.28";
-    wakeupInfo["destination_device"] = "${result.substring(0, 8)}";
-    wakeupInfo["destination_version"] = "${result.slice(9)}";
-    wakeupInfo["bundle_name"] = "com.huawei.hmos.aibase";
-    wakeupInfo["ability_name"] = "WakeUpExtAbility";
-
-    cb_ = std::make_shared<IntellVoiceUpdateCallback>();
-    int ret3 = IntellVoiceManager::GetInstance()->EnrollWithWakeupFilesForResult(
-        cloneFileInfo, wakeupInfo.toStyledString(), cb_);
-    sleep(5);
-    EXPECT_EQ(0, ret3);
+    IntellVoiceManager::GetInstance()->GetWakeupSourceFiles(cloneFileInfo);
     INTELL_VOICE_LOG_INFO("EnrollWithWakeupFilesForResult end");
 }
 

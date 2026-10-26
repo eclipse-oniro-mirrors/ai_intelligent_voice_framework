@@ -15,6 +15,7 @@
 #include "intell_voice_manager.h"
 
 #include <chrono>
+#include "json/json.h"
 #include "iservice_registry.h"
 #include "system_ability_definition.h"
 #include "memory_guard.h"
@@ -145,6 +146,40 @@ int32_t IntellVoiceManager::DeregisterServiceDeathRecipient(sptr<OHOS::IRemoteOb
         return -1;
     }
     return 0;
+}
+
+int32_t IntellVoiceManager::RegisterDeviceWakeupInfo(const std::string &macAddress, const WakeupDeviceInfo &info)
+{
+    INTELL_VOICE_LOG_INFO("enter");
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (g_sProxy == nullptr) {
+        INTELL_VOICE_LOG_ERROR("IntellVoiceService Proxy is null");
+        return -1;
+    }
+ 
+    if (macAddress.empty()) {
+        INTELL_VOICE_LOG_ERROR("macAddress isEmpty");
+        return -1;
+    }
+ 
+    return g_sProxy->RegisterDeviceWakeupInfo(macAddress, info);
+}
+ 
+int32_t IntellVoiceManager::DeregisterDeviceWakeupInfo(const std::string &macAddress)
+{
+    INTELL_VOICE_LOG_INFO("enter");
+    std::unique_lock<std::mutex> lock(mutex_);
+    if (g_sProxy == nullptr) {
+        INTELL_VOICE_LOG_ERROR("IntellVoiceService Proxy is null");
+        return -1;
+    }
+ 
+    if (macAddress.empty()) {
+        INTELL_VOICE_LOG_ERROR("macAddress isEmpty");
+        return -1;
+    }
+ 
+    return g_sProxy->DeregisterDeviceWakeupInfo(macAddress);
 }
 
 int32_t IntellVoiceManager::GetUploadFiles(int numMax, std::vector<UploadFilesInfo> &files)
@@ -292,7 +327,23 @@ int32_t IntellVoiceManager::EnrollWithWakeupFilesForResult(const std::vector<Wak
         INTELL_VOICE_LOG_ERROR("IntellVoiceService proxy is null");
         return -1;
     }
-
+    std::istringstream jsonStrm(wakeupInfo);
+    Json::CharReaderBuilder reader;
+    Json::Value root;
+    std::string errs;
+ 
+    reader["collectComments"] = false;
+    if (!Json::parseFromStream(reader, jsonStrm, &root, &errs)) {
+        INTELL_VOICE_LOG_ERROR("input str is not json");
+        return -1;
+    }
+    if (root.isMember("implicit_enroll") && root["implicit_enroll"].asString() == "true") {
+        INTELL_VOICE_LOG_INFO("implicit enroll");
+        if (g_sProxy->GetParameter("isSupportImplicitEnroll") != "true") {
+            INTELL_VOICE_LOG_ERROR("not support implicit enroll");
+            return -1;
+        }
+    }
     size_t fileCount = cloneFileInfo.size();
     for (size_t index = 0; index < fileCount; ++index) {
         int ret = g_sProxy->SendWakeupFile(cloneFileInfo[index].filePath, cloneFileInfo[index].fileContent);

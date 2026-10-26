@@ -17,6 +17,7 @@
 #define INTELL_VOICE_SERVICE_PROXY_H
 
 #include <iremote_proxy.h>
+#include "i_device_wakeup.h"
 #include "i_intell_voice_service.h"
 #include "i_intell_voice_engine.h"
 
@@ -37,6 +38,8 @@ public:
     int32_t SendWakeupFile(const std::string &filePath, const std::vector<uint8_t> &buffer) override;
     int32_t EnrollWithWakeupFilesForResult(const std::string &wakeupInfo, const sptr<IRemoteObject> object) override;
     int32_t ClearUserData() override;
+    int32_t RegisterDeviceWakeupInfo(const std::string &macAddress, const WakeupDeviceInfo &info) override;
+    int32_t DeregisterDeviceWakeupInfo(const std::string &macAddress) override;
 
 private:
     static inline BrokerDelegator<IntellVoiceServiceProxy> delegator_;

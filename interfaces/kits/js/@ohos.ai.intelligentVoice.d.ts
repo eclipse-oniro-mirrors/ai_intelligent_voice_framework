@@ -1121,6 +1121,20 @@ declare namespace intelligentVoice {
      * @systemapi
      * @since 22 dynamic&static
      */
+    /**
+     * Enrolls for result, This method uses an asynchronous callback to return the result.
+     * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE and ohos.permission.MICROPHONE
+     * @param { boolean } isLast - isLast indicates if it is the last time to enroll.
+     * @param { AsyncCallback<EnrollCallbackInfo> } callback - the callback used to return the result.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 202 - Not system application.
+     * @throws { BusinessError } 401 - Parameter error. Possible causes: 1. Mandatory parameters are left unspecified. 2. Incorrect parameter types.
+     * @throws { BusinessError } 22700107 - System error.
+     * @syscap SystemCapability.AI.IntelligentVoice.Core
+     * @systemapi
+     * @since arkts{ '1.1':'20','1.2':'20'}
+     * @arkts 1.1&1.2
+     */
     enrollForResult(isLast: boolean, callback: AsyncCallback<EnrollCallbackInfo>): void;
     /**
      * Enrolls for result, This method uses a promise to return the result.
@@ -1146,6 +1160,20 @@ declare namespace intelligentVoice {
      * @syscap SystemCapability.AI.IntelligentVoice.Core
      * @systemapi
      * @since 22 dynamic&static
+     */
+    /**
+     * Enrolls for result, This method uses a promise to return the result.
+     * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE and ohos.permission.MICROPHONE
+     * @param { boolean } isLast - isLast indicates if it is the last time to enroll.
+     * @returns { Promise<EnrollCallbackInfo> } the promise used to return the result.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 202 - Not system application.
+     * @throws { BusinessError } 401 - Parameter error. Possible causes: 1. Mandatory parameters are left unspecified. 2. Incorrect parameter types.
+     * @throws { BusinessError } 22700107 - System error.
+     * @syscap SystemCapability.AI.IntelligentVoice.Core
+     * @systemapi
+     * @since arkts{ '1.1':'20','1.2':'20'}
+     * @arkts 1.1&1.2
      */
     enrollForResult(isLast: boolean): Promise<EnrollCallbackInfo>;
     /**
@@ -1564,7 +1592,27 @@ declare namespace intelligentVoice {
      * @systemapi
      * @since 22 dynamic&static
      */
+<<<<<<< HEAD
+    /**
+     * Starts the capturer. This method uses a promise to return the result.
+     * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE and ohos.permission.MICROPHONE
+     * @param { number } channels - the channels needed in reading. The channels should be greater than 0 and smaller than 16.
+     * @returns { Promise<void> } the promise used to return the result.
+     * @throws { BusinessError } 201 - Permission denied.
+     * @throws { BusinessError } 202 - Not system application.
+     * @throws { BusinessError } 401 - Parameter error. Possible causes: 1. Mandatory parameters are left unspecified. 2. Incorrect parameter types. 3.Parameter verification failed.
+     * @throws { BusinessError } 22700102 - Invalid parameter.
+     * @throws { BusinessError } 22700105 - Start capturer failed.
+     * @throws { BusinessError } 22700107 - System error.
+     * @syscap SystemCapability.AI.IntelligentVoice.Core
+     * @systemapi
+     * @since arkts{ '1.1':'20','1.2':'20'}
+     * @arkts 1.1&1.2
+     */
+    startCapturer(channels: number): Promise<void>;
+=======
     startCapturer(channels: int): Promise<void>;
+>>>>>>> 210c45e (add static sdk support)
     /**
      * Reads the buffer from wakeup engine. This method uses a promise to return the result.
      * @permission ohos.permission.MANAGE_INTELLIGENT_VOICE

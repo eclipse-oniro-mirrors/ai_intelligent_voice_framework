@@ -14,9 +14,7 @@
 group("intell_voice_unit_test") {
   testonly = true
   deps = [
-    "unittest/intell_voice_test:client_unit_test",
-    "unittest/intell_voice_test:trigger_unit_test",
-    "unittest/intell_voice_test:update_engine_test",
+    "llt:intell_voice_service_mock_llt",
   ]
 }
 

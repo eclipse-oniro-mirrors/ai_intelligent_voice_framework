@@ -20,6 +20,8 @@
 
 namespace OHOS {
 namespace IntellVoiceEngine {
+static constexpr uint32_t BUFFER_SIZE_MAX = (10 * 1024 * 1024);
+
 void IntellVoiceEngineProxy::SetCallback(sptr<IRemoteObject> object)
 {
     MessageParcel data;
@@ -200,6 +202,10 @@ int32_t IntellVoiceEngineProxy::Read(std::vector<uint8_t> &data)
         INTELL_VOICE_LOG_ERROR("buffer size is zero");
         return -1;
     }
+    if (size > BUFFER_SIZE_MAX) {
+        INTELL_VOICE_LOG_ERROR("buffer size is too big");
+        return -1;
+    }
     const uint8_t *buff = reply.ReadBuffer(size);
     if (buff == nullptr) {
         INTELL_VOICE_LOG_ERROR("buffer is nullptr");
@@ -247,6 +253,10 @@ int32_t IntellVoiceEngineProxy::GetWakeupPcm(std::vector<uint8_t> &data)
         INTELL_VOICE_LOG_ERROR("buffer size is zero");
         return -1;
     }
+    if (size > BUFFER_SIZE_MAX) {
+        INTELL_VOICE_LOG_ERROR("buffer size is too big");
+        return -1;
+    }
     const uint8_t *buff = reply.ReadBuffer(size);
     if (buff == nullptr) {
         INTELL_VOICE_LOG_ERROR("buffer is nullptr");
@@ -281,32 +291,17 @@ int32_t IntellVoiceEngineProxy::Evaluate(const std::string &word, EvaluationResu
     return ret;
 }
 
-int32_t IntellVoiceEngineProxy::NotifyHeadsetWakeEvent()
+int32_t IntellVoiceEngineProxy::NotifyDeviceWakeupEvent(const std::string &macAddress, const EventDetail &event)
 {
     INTELL_VOICE_LOG_INFO("enter");
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
-
     data.WriteInterfaceToken(IIntellVoiceEngine::GetDescriptor());
-    int32_t error = Remote()->SendRequest(INTELL_VOICE_ENGINE_NOTIFY_HEADSET_WAKE_EVENT, data, reply, option);
-    if (error != 0) {
-        INTELL_VOICE_LOG_ERROR("notify headset wakeup event error: %{public}d", error);
-        return -1;
-    }
-    return reply.ReadInt32();
-}
-
-int32_t IntellVoiceEngineProxy::NotifyHeadsetHostEvent(HeadsetHostEventType event)
-{
-    INTELL_VOICE_LOG_INFO("enter");
-    MessageParcel data;
-    MessageParcel reply;
-    MessageOption option;
-
-    data.WriteInterfaceToken(IIntellVoiceEngine::GetDescriptor());
-    data.WriteInt32(event);
-    int32_t error = Remote()->SendRequest(INTELL_VOICE_ENGINE_NOTIFY_HEADSET_HOSTEVENT, data, reply, option);
+    data.WriteString(macAddress);
+    data.WriteInt32(event.wakeupEvent);
+    data.WriteInt32(event.endFrameIndex);
+    int32_t error = Remote()->SendRequest(INTELL_VOICE_ENGINE_NOTIFY_DEVICE_WAKEUP_EVENT, data, reply, option);
     if (error != 0) {
         INTELL_VOICE_LOG_ERROR("notify headset host event error: %{public}d", error);
         return -1;

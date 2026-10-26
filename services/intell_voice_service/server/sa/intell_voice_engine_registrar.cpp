@@ -32,11 +32,12 @@ void IntellVoiceEngineRegistrar::RegisterEngineCallbacks()
 {
     RegisterHandleCloseWakeupSource();
     RegisterHandleClearWakeupEngineCb();
-    RegisterHandleHeadsetHostDie();
     RegisterHandleReleaseEngine();
+    RegisterHandleDeviceServiceDie();
     RegisterHandleUpdateComplete();
     RegisterHandleUpdateRetry();
     RegisterReleaseEngine();
+    RegisterReleaseImplicitEnrollEngine();
     RegisterQuerySwitchStatus();
     RegisterTriggerGetParameter();
     RegisterTriggerSetParameter();
@@ -77,20 +78,6 @@ void IntellVoiceEngineRegistrar::RegisterHandleClearWakeupEngineCb()
         });
 }
 
-void IntellVoiceEngineRegistrar::RegisterHandleHeadsetHostDie()
-{
-    EngineCallbackMessage::RegisterFunc(EngineCbMessageId::HANDLE_HEADSET_HOST_DIE,
-        [this](const std::vector<std::any> &args) -> std::optional<std::any> {
-            if (args.size() != 0) {
-                INTELL_VOICE_LOG_ERROR("HANDLE_HEADSET_HOST_DIE receiving wrong param size: %{public}u",
-                    static_cast<uint32_t>(args.size()));
-                return std::nullopt;
-            }
-            HandleHeadsetHostDie();
-            return std::nullopt;
-        });
-}
-
 void IntellVoiceEngineRegistrar::RegisterHandleReleaseEngine()
 {
     EngineCallbackMessage::RegisterFunc(EngineCbMessageId::HANDLE_RELEASE_ENGINE,
@@ -106,6 +93,26 @@ void IntellVoiceEngineRegistrar::RegisterHandleReleaseEngine()
                 return std::optional<std::any>(result);
             } catch (const std::bad_any_cast&) {
                 INTELL_VOICE_LOG_ERROR("HANDLE_RELEASE_ENGINE bad any cast");
+                return std::nullopt;
+            }
+        });
+}
+
+void IntellVoiceEngineRegistrar::RegisterHandleDeviceServiceDie()
+{
+    EngineCallbackMessage::RegisterFunc(EngineCbMessageId::HANDLE_DEVICE_SERVICE_DIE,
+        [this](const std::vector<std::any> &args) -> std::optional<std::any> {
+            if (args.size() != ARGS_ONE || !args[ARGS_INDEX_0].has_value()) {
+                INTELL_VOICE_LOG_ERROR("HANDLE_DEVICE_SERVICE_DIE receiving wrong param size: %{public}u",
+                    static_cast<uint32_t>(args.size()));
+                return std::nullopt;
+            }
+            try {
+                std::string serviceName = std::any_cast<std::string>(args[ARGS_INDEX_0]);
+                HandleDeviceServiceDie(serviceName);
+                return std::nullopt;
+            } catch (const std::bad_any_cast&) {
+                INTELL_VOICE_LOG_ERROR("HANDLE_DEVICE_SERVICE_DIE bad any cast");
                 return std::nullopt;
             }
         });
@@ -164,6 +171,25 @@ void IntellVoiceEngineRegistrar::RegisterReleaseEngine()
                 return std::nullopt;
             }
     });
+}
+
+void IntellVoiceEngineRegistrar::RegisterReleaseImplicitEnrollEngine()
+{
+    EngineCallbackMessage::RegisterFunc(EngineCbMessageId::RELEASE_IMPLICIT_ENROLL_ENGINE,
+        [this](const std::vector<std::any> &args) -> std::optional<std::any> {
+            if (args.size() >= ARGS_ONE) {
+                INTELL_VOICE_LOG_ERROR("RELEASE_IMPLICIT_ENROLL_ENGINE receiving wrong param size: %{public}u",
+                    static_cast<uint32_t>(args.size()));
+                return std::nullopt;
+            }
+            try {
+                int32_t result = ReleaseImplicitEnrollEngine();
+                return std::optional<std::any>(result);
+            } catch (const std::bad_any_cast&) {
+                INTELL_VOICE_LOG_ERROR("RELEASE_IMPLICIT_ENROLL_ENGINE bad any cast");
+                return std::nullopt;
+            }
+        });
 }
 
 void IntellVoiceEngineRegistrar::RegisterQuerySwitchStatus()

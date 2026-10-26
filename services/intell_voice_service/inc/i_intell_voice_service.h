@@ -20,6 +20,7 @@
 #include "iremote_broker.h"
 #include <ashmem.h>
 #include "i_intell_voice_engine.h"
+#include "i_device_wakeup.h"
 
 namespace OHOS {
 namespace IntellVoiceEngine {
@@ -45,7 +46,9 @@ public:
         HDI_INTELL_VOICE_SERVICE_SEND_CLONE_FILE,
         HDI_INTELL_VOICE_SERVICE_CLONE_FOR_RESULT,
         HDI_INTELL_VOICE_SERVICE_SET_PARAMETER,
-        HDI_INTELL_VOICE_SERVICE_CLEAR_USER_DATA
+        HDI_INTELL_VOICE_SERVICE_CLEAR_USER_DATA,
+        HDI_INTELL_VOICE_SERVICE_REGISTER_DEVICE,
+        HDI_INTELL_VOICE_SERVICE_DEREGISTER_DEVICE
     };
 
     virtual int32_t CreateIntellVoiceEngine(IntellVoiceEngineType type, sptr<IIntellVoiceEngine> &inst) = 0;
@@ -59,6 +62,8 @@ public:
     virtual int32_t EnrollWithWakeupFilesForResult(const std::string &wakeupInfo,
         const sptr<IRemoteObject> object) = 0;
     virtual int32_t ClearUserData() = 0;
+    virtual int32_t RegisterDeviceWakeupInfo(const std::string &macAddress, const WakeupDeviceInfo &info) = 0;
+    virtual int32_t DeregisterDeviceWakeupInfo(const std::string &macAddress) = 0;
 };
 }
 }

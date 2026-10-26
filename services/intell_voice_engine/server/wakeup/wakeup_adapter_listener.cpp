@@ -17,10 +17,12 @@
 #include <thread>
 #include "intell_voice_log.h"
 #include "v1_2/intell_voice_engine_types.h"
+#include "wakeup_track.h"
 
 #define LOG_TAG "WakeupAdapterListener"
 
 using namespace OHOS::HDI::IntelligentVoice::Engine::V1_2;
+using namespace OHOS::IntellVoiceUtils;
 
 namespace OHOS {
 namespace IntellVoiceEngine {
@@ -67,11 +69,19 @@ void WakeupAdapterListener::OnIntellVoiceHdiEvent(const IntellVoiceEngineCallBac
     wakeupEventCb_(event);
 }
 
+void WakeupAdapterListener::ClearBackupEvent()
+{
+    INTELL_VOICE_LOG_INFO("enter");
+    historyEvent_ = nullptr;
+}
+
 void WakeupAdapterListener::Notify(const IntellVoiceEngineCallBackEvent &event)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     if (cb_ == nullptr) {
         INTELL_VOICE_LOG_WARN("cb_ is nullptr");
+        WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_RECOGNIZED,
+            OHOS::IntellVoiceUtils::WAKEUP_RESULT_FAIL, OHOS::IntellVoiceUtils::SA_CALLBACK_ERROR); 
         BackupCallBackEvent(event);
         return;
     }

@@ -99,6 +99,9 @@ void ModuleStates::ToState(std::map<State, StateActions*>::iterator &nextIt)
     if (action->cfg.delayUs != 0) {
         action->timerId = SetTimer(action->cfg.type, action->cfg.delayUs, action->cfg.cookie, this);
     }
+    if (stateListener_ != nullptr) {
+        stateListener_->OnStateChange(nextIt->first, processType_);
+    }
 }
 
 void ModuleStates::OnTimerEvent(TimerEvent &info)

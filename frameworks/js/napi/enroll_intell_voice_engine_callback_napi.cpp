@@ -163,18 +163,26 @@ void EnrollIntellVoiceEngineCallbackNapi::OnEvent(const IntellVoiceEngineCallBac
 void EnrollIntellVoiceEngineCallbackNapi::UvWorkCallBack(uv_work_t *work, int status)
 {
     INTELL_VOICE_LOG_INFO("enter");
+
     auto asyncContext = reinterpret_cast<EnrollAsyncContext *>(work->data);
-    napi_value result = nullptr;
-    if (asyncContext != nullptr) {
-        napi_env env = asyncContext->env_;
-        if (asyncContext->callbackInfo.eventId ==
-            HDI::IntelligentVoice::Engine::V1_0::INTELL_VOICE_ENGINE_MSG_ENROLL_COMPLETE) {
-            asyncContext->callbackInfo.GetCallBackInfoNapiValue(env, result);
-        } else {
-            napi_get_undefined(env, &result);
-        }
-        NapiAsync::CommonCallbackRoutine(env, asyncContext, result);
+    if (asyncContext == nullptr) {
+        delete work;
+        return;
     }
+
+    napi_env env = asyncContext->env_;
+    napi_handle_scope scope;
+    napi_open_handle_scope(env, &scope);
+    napi_value result = nullptr;
+
+    if (asyncContext->callbackInfo.eventId ==
+        HDI::IntelligentVoice::Engine::V1_0::INTELL_VOICE_ENGINE_MSG_ENROLL_COMPLETE) {
+        asyncContext->callbackInfo.GetCallBackInfoNapiValue(env, result);
+    } else {
+        napi_get_undefined(env, &result);
+    }
+    NapiAsync::CommonCallbackRoutine(env, asyncContext, result);
+    napi_close_handle_scope(env, scope);
 
     delete work;
 }

@@ -36,6 +36,7 @@ ohos_shared_library("intell_voice_utils") {
     "thread_wrapper.cpp",
     "time_util.cpp",
     "timer_mgr.cpp",
+    "wakeup_track.cpp"
   ]
 
   defines = [ "USE_FFRT" ]
@@ -49,6 +50,19 @@ ohos_shared_library("intell_voice_utils") {
     defines += [ "INTELL_VOICE_BUILD_VARIANT_ROOT" ]
   }
 
+  cflags_cc = [
+    "-Oz",
+    "-flto",
+  ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    cfi_vcall_icall_only = true
+    debug = false
+  }
+  branch_protector_ret = "pac_ret"
+
   external_deps = [
     "ability_runtime:ability_manager",
     "access_token:libaccesstoken_sdk",
@@ -60,13 +74,19 @@ ohos_shared_library("intell_voice_utils") {
     "ipc:ipc_core",
     "kv_store:distributeddata_inner",
     "safwk:system_ability_fwk",
+    "jsoncpp:jsoncpp",
   ]
 
   subsystem_name = "ai"
   part_name = "intelligent_voice_framework"
 
   if (intelligent_voice_framework_engine_enable) {
-    sources += [ "huks_aes_adapter.cpp" ]
+    sources += [
+        "huks_aes_adapter.cpp",
+        "file_util.cpp",
+        "pcm_buffer.cpp",
+        "file_reporter.cpp"
+    ]
     external_deps += [ "huks:libhukssdk" ]
   }
 }

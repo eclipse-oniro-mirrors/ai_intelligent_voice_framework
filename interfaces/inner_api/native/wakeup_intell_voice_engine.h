@@ -25,6 +25,7 @@ namespace IntellVoice {
 using OHOS::IntellVoiceEngine::IIntellVoiceEngineEventCallback;
 using OHOS::IntellVoiceEngine::IIntellVoiceEngine;
 using OHOS::IntellVoiceEngine::EngineCallbackInner;
+using OHOS::IntellVoiceEngine::EventDetail;
 
 struct WakeupIntelligentVoiceEngineDescriptor {
     bool needReconfirm;
@@ -47,8 +48,7 @@ public:
     int32_t Read(std::vector<uint8_t> &data);
     int32_t StopCapturer();
     int32_t GetWakeupPcm(std::vector<uint8_t> &data);
-    int32_t NotifyHeadsetWakeEvent();
-    int32_t NotifyHeadsetHostEvent(int32_t event);
+    int32_t NotifyDeviceWakeupEvent(const std::string &macAddress, const EventDetail &event);
     int32_t result_ = INTELLIGENT_VOICE_SUCCESS;
 
 private:

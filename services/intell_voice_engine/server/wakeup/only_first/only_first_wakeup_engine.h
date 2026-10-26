@@ -43,8 +43,6 @@ public:
     int32_t StartCapturer(int32_t channels) override;
     int32_t Read(std::vector<uint8_t> &data) override;
     int32_t StopCapturer() override;
-    int32_t NotifyHeadsetWakeEvent() override { return 0; };
-    int32_t NotifyHeadsetHostEvent(HeadsetHostEventType event) override { return 0; };
 
 private:
     void ResetSingleLevelWakeup(const std::string &value);

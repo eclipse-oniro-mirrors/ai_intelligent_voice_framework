@@ -27,6 +27,7 @@ using namespace OHOS::IntellVoiceUtils;
 namespace OHOS {
 namespace IntellVoiceEngine {
 static constexpr uint32_t MINOR_VERSION_2 = 2;
+static constexpr uint32_t MINOR_VERSION_3 = 3;
 
 EngineHostManager::~EngineHostManager()
 {
@@ -65,6 +66,16 @@ bool EngineHostManager::Init()
         if (castResult_V1_2 != nullptr) {
             engineHostProxy1_2_ = castResult_V1_2;
             engineHostProxy1_1_ = engineHostProxy1_2_;
+        }
+    } else if (IntellVoiceUtil::GetHdiVersionId(majorVer, minorVer) ==
+        IntellVoiceUtil::GetHdiVersionId(1, MINOR_VERSION_3)) {
+        INTELL_VOICE_LOG_INFO("version is 1.3");
+        auto castResult_V1_3 =
+            OHOS::HDI::IntelligentVoice::Engine::V1_3::IIntellVoiceEngineManager::CastFrom(engineHostProxy1_0_);
+        if (castResult_V1_3 != nullptr) {
+            engineHostProxy1_3_ = castResult_V1_3;
+            engineHostProxy1_2_ = engineHostProxy1_3_;
+            engineHostProxy1_1_ = engineHostProxy1_3_;
         }
     }
 

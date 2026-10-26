@@ -37,9 +37,9 @@
             <option name="push" value="ai/intelligent_voice_framework/libintelligentvoice_engine_test.z.so -> /system/lib64" src="out"/>
             <option name="push" value="ai/intelligent_voice_framework/libintell_voice_server_test.z.so -> /system/lib64" src="out"/>
             <option name="push" value="ai/intelligent_voice_framework/libintelligentvoice_engine_test.z.so -> /system/lib" src="out"/>
-	        <option name="push" value="ai/intelligent_voice_framework/libintell_voice_server_test.z.so -> /system/lib" src="out"/>
-	        <option name="push" value="ai/intelligent_voice_framework/libintelligentvoice_trigger_test.z.so -> /system/lib64" src="out"/>
-	        <option name="push" value="ai/intelligent_voice_framework/libintelligentvoice_trigger_test.z.so -> /system/lib" src="out"/>
+            <option name="push" value="ai/intelligent_voice_framework/libintell_voice_server_test.z.so -> /system/lib" src="out"/>
+            <option name="push" value="ai/intelligent_voice_framework/libintelligentvoice_trigger_test.z.so -> /system/lib64" src="out"/>
+            <option name="push" value="ai/intelligent_voice_framework/libintelligentvoice_trigger_test.z.so -> /system/lib" src="out"/>
         </preparer>
     </target>
 </configuration>

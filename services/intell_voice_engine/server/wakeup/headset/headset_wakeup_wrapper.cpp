@@ -89,7 +89,8 @@ int32_t HeadsetWakeupWrapper::ReadHeadsetStream(std::vector<uint8_t> &audioStrea
 int32_t HeadsetWakeupWrapper::NotifyVerifyResult(bool result)
 {
     INTELL_VOICE_LOG_INFO("enter");
-    std::lock_guard<std::mutex> lock(mutex_);
+    // 使用独立notifyMutex_而非mutex_，避免被ReadHeadsetStream循环占用锁阻塞，保证验证结果及时上报
+    std::lock_guard<std::mutex> lock(notifyMutex_);
     if (inst_ == nullptr) {
         INTELL_VOICE_LOG_ERROR("inst is nullptr");
         return -1;
@@ -108,29 +109,6 @@ int32_t HeadsetWakeupWrapper::StopReadingStream()
     }
 
     return inst_->StopReadingStream();
-}
-
-int32_t HeadsetWakeupWrapper::GetHeadsetAwakeState()
-{
-    INTELL_VOICE_LOG_INFO("enter");
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (inst_ == nullptr) {
-        INTELL_VOICE_LOG_ERROR("inst is nullptr");
-        return -1;
-    }
-
-    return inst_->GetHeadsetAwakeState();
-}
-
-void HeadsetWakeupWrapper::NotifyHeadsetHdfDeath()
-{
-    INTELL_VOICE_LOG_INFO("enter");
-    std::lock_guard<std::mutex> lock(mutex_);
-    if (inst_ == nullptr) {
-        INTELL_VOICE_LOG_ERROR("inst is nullptr");
-        return;
-    }
-    inst_->NotifyHeadsetHdfDeath();
 }
 }  // namespace IntellVoice
 }  // namespace OHOS

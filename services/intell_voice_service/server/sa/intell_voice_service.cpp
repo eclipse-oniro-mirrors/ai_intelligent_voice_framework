@@ -26,6 +26,7 @@
 #include "common_event_support.h"
 #include "intell_voice_util.h"
 #include "intell_voice_info.h"
+#include "wakeup_track.h"
 
 #define LOG_TAG "IntellVoiceService"
 
@@ -82,6 +83,10 @@ int32_t IntellVoiceService::ReleaseIntellVoiceEngine(IntellVoiceEngineType type)
     if (ret != INTELLIGENT_VOICE_SUCCESS) {
         INTELL_VOICE_LOG_WARN("verify permission denied");
         return ret;
+    }
+    if (type == IntellVoiceEngineType::INTELL_VOICE_DEVICE) {
+        INTELL_VOICE_LOG_INFO("do not release");
+        return INTELLIGENT_VOICE_SUCCESS;
     }
 
     return ServiceManagerType::GetInstance().HandleReleaseEngine(type);
@@ -141,6 +146,32 @@ int32_t IntellVoiceService::OnIdle(const SystemAbilityOnDemandReason &idleReason
     return 0;
 }
 
+/**
+ * @brief 服务重新激活回调函数
+ * @param activeReason 激活原因，包含事件ID、名称和值
+ * @description 在服务从idle状态被重新激活时调用（CancelIdle），
+ *              介于OnIdle和OnStop之间。如果被特定系统事件重新激活，
+ *              会尝试再次卸载服务。
+ * @note 可能会修改类的成员变量 reasonId_, reasonName_, reasonValue_
+ */
+void IntellVoiceService::OnActive(const SystemAbilityOnDemandReason& activeReason)
+{
+    // if reactivated by system event, unload again
+    reasonId_ = static_cast<int32_t>(activeReason.GetId());
+    reasonName_ = activeReason.GetName();
+    reasonValue_ = activeReason.GetValue();
+    INTELL_VOICE_LOG_INFO("enter, reason id:%{public}d, reasonName:%{public}s, reasonValue:%{public}s",
+        reasonId_, reasonName_.empty() ? "" : reasonName_.c_str(), reasonValue_.empty() ? "" : reasonValue_.c_str());
+    auto &manager = ServiceManagerType::GetInstance();
+    manager.OnServiceActive();
+    if (reasonId_ == static_cast<int32_t>(OHOS::OnDemandReasonId::COMMON_EVENT) &&
+        (reasonName_ == std::string("usual.event.BOOT_COMPLETED") ||
+        reasonName_ == std::string("usual.event.POWER_SAVE_MODE_CHANGED"))) {
+        INTELL_VOICE_LOG_INFO("try to unload again");
+        manager.HandleUnloadIntellVoiceService(true);
+    }
+}
+
 void IntellVoiceService::OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId)
 {
     INTELL_VOICE_LOG_INFO("add systemAbilityId:%{public}d", systemAbilityId);
@@ -159,7 +190,31 @@ void IntellVoiceService::OnAddSystemAbility(int32_t systemAbilityId, const std::
 }
 
 void IntellVoiceService::OnRemoveSystemAbility(int32_t systemAbilityId, const std::string &deviceId)
-{}
+{
+    if (!NeedProcOnRemoved(systemAbilityId)) {
+        return;
+    }
+    auto iter = systemAbilityChangeMap_.find(systemAbilityId);
+    if (iter == systemAbilityChangeMap_.end()) {
+        INTELL_VOICE_LOG_WARN("unhandled sysabilityId");
+        return;
+    }
+
+    if (iter->second == nullptr) {
+        INTELL_VOICE_LOG_WARN("func is nullptr");
+        return;
+    }
+
+    iter->second(false);
+}
+
+bool IntellVoiceService::NeedProcOnRemoved(int32_t systemAbilityId)
+{
+    if (systemAbilityId == DISTRIBUTED_KV_DATA_SERVICE_ABILITY_ID) {
+        return true;
+    }
+    return false;
+}
 
 void IntellVoiceService::CreateSystemEventObserver()
 {
@@ -228,6 +283,7 @@ void IntellVoiceService::InitIntellVoiceService()
     } else {
         INTELL_VOICE_LOG_INFO("no need to process, reason id:%{public}d", reasonId_);
     }
+    IntellVoiceUtil::StartAbility("power_on");
     reasonId_ = -1;
 }
 
@@ -239,8 +295,12 @@ void IntellVoiceService::OnReceiveCes(const OHOS::EventFwk::CommonEventData &dat
         std::lock_guard<std::mutex> lock(initServiceMutex_);
         if (!isServiceInit_) {
             INTELL_VOICE_LOG_INFO("receive COMMON_EVENT_DATA_SHARE_READY, init intell voice service");
-            isServiceInit_ = true;
+            if (isDataShareRemoved_) {
+                reasonId_ = static_cast<int32_t>(OHOS::OnDemandReasonId::INTERFACE_CALL);
+            }
             InitIntellVoiceService();
+            isServiceInit_ = true;
+            isDataShareRemoved_ = false;
         }
     }
 }
@@ -259,9 +319,9 @@ void IntellVoiceService::OnCommonEventServiceChange(bool isAdded)
 
 void IntellVoiceService::OnDistributedKvDataServiceChange(bool isAdded)
 {
+    std::lock_guard<std::mutex> lock(initServiceMutex_);
     if (isAdded) {
         INTELL_VOICE_LOG_INFO("distributed kv data service is added");
-        std::lock_guard<std::mutex> lock(initServiceMutex_);
         if (isServiceInit_) {
             INTELL_VOICE_LOG_INFO("already init intell voice service");
             return;
@@ -271,10 +331,16 @@ void IntellVoiceService::OnDistributedKvDataServiceChange(bool isAdded)
             return;
         }
         INTELL_VOICE_LOG_INFO("data service change, init intell voice service");
-        isServiceInit_ = true;
+        if (isDataShareRemoved_) {
+            reasonId_ = static_cast<int32_t>(OHOS::OnDemandReasonId::INTERFACE_CALL);
+        }
         InitIntellVoiceService();
+        isServiceInit_ = true;
+        isDataShareRemoved_ = false;
     } else {
         INTELL_VOICE_LOG_INFO("distributed kv data service is removed");
+        isServiceInit_ = false;
+        isDataShareRemoved_ = true;
     }
 }
 
@@ -313,6 +379,22 @@ bool IntellVoiceService::DeregisterDeathRecipient(IntellVoiceEngineType type)
     }
 
     return ServiceManagerType::GetInstance().DeregisterProxyDeathRecipient(type);
+}
+
+bool IntellVoiceService::RegisterDeviceDeathRecipient(const std::string &serviceName,
+    const sptr<IRemoteObject> &object)
+{
+    if (IntellVoiceUtil::VerifySystemPermission(OHOS_PERMISSION_INTELL_VOICE) != INTELLIGENT_VOICE_SUCCESS) {
+        INTELL_VOICE_LOG_WARN("verify permission denied");
+        return false;
+    }
+ 
+    if (serviceName.empty() || object == nullptr) {
+        INTELL_VOICE_LOG_WARN("serviceName is empty or object is nullptr, no need to register");
+        return false;
+    }
+ 
+    return ServiceManagerType::GetInstance().RegisterDeviceDeathRecipient(serviceName, object);
 }
 
 int32_t IntellVoiceService::GetUploadFiles(int numMax, std::vector<UploadFilesFromHdi> &files)
@@ -410,6 +492,28 @@ int32_t IntellVoiceService::ClearUserData()
     }
 
     return ServiceManagerType::GetInstance().ClearUserData();
+}
+
+int32_t IntellVoiceService::RegisterDeviceWakeupInfo(const std::string &macAddress, const WakeupDeviceInfo &info)
+{
+    auto ret = IntellVoiceUtil::VerifySystemPermission(OHOS_PERMISSION_INTELL_VOICE);
+    if (ret != INTELLIGENT_VOICE_SUCCESS) {
+        INTELL_VOICE_LOG_WARN("verify permission denied");
+        return ret;
+    }
+ 
+    return ServiceManagerType::GetInstance().RegisterWakeupDevice(macAddress, info);
+}
+ 
+int32_t IntellVoiceService::DeregisterDeviceWakeupInfo(const std::string &macAddress)
+{
+    auto ret = IntellVoiceUtil::VerifySystemPermission(OHOS_PERMISSION_INTELL_VOICE);
+    if (ret != INTELLIGENT_VOICE_SUCCESS) {
+        INTELL_VOICE_LOG_WARN("verify permission denied");
+        return ret;
+    }
+ 
+    return ServiceManagerType::GetInstance().DeregisterWakeupDevice(macAddress);
 }
 }  // namespace IntellVoiceEngine
 }  // namespace OHOS

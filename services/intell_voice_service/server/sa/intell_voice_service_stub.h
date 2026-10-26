@@ -31,6 +31,7 @@ public:
 protected:
     virtual bool RegisterDeathRecipient(IntellVoiceEngineType type, const sptr<IRemoteObject> &object) = 0;
     virtual bool DeregisterDeathRecipient(IntellVoiceEngineType type) = 0;
+    virtual bool RegisterDeviceDeathRecipient(const std::string &serviceName, const sptr<IRemoteObject> &object) = 0;
 
 private:
     std::map<uint32_t, std::function<int32_t(MessageParcel &data, MessageParcel &reply)>> processServiceFuncMap_;
@@ -44,6 +45,8 @@ private:
     int32_t SendCloneFileInner(MessageParcel &data, MessageParcel &reply);
     int32_t CloneForResultInner(MessageParcel &data, MessageParcel &reply);
     int32_t ClearUserDataInner(MessageParcel &data, MessageParcel &reply);
+    int32_t RegisterDeviceInner(MessageParcel &data, MessageParcel &reply);
+    int32_t DeregisterDeviceInner(MessageParcel &data, MessageParcel &reply);
 };
 }  // namespace IntellVoiceEngine
 }  // namespace OHOS

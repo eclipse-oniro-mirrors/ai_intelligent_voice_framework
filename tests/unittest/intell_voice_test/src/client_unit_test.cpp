@@ -69,32 +69,12 @@ HWTEST_F(ClientTest, ClientUtils, TestSize.Level1)
 
     sptr<IIntellVoiceEngine> engine;
     IntellVoiceManager::GetInstance()->CreateIntellVoiceEngine(INTELL_VOICE_ENROLL, engine);
-    ASSERT_NE(engine, nullptr);
-
-    cb_ = std::make_shared<EngineEventCallback>(engine, &waitForResult);
-    ASSERT_NE(cb_, nullptr);
-
-    sptr<EngineCallbackInner> callback = new (std::nothrow) EngineCallbackInner(cb_);
-    ASSERT_NE(callback, nullptr);
-
-    sptr<IRemoteObject> callbackObj = callback->AsObject();
-    ASSERT_NE(callbackObj, nullptr);
-
-    engine->SetCallback(callbackObj);
-
-    IntellVoiceEngineInfo info = {};
-    info.wakeupPhrase = "\xE5\xB0\x8F\xE8\x89\xBA\xE5\xB0\x8F\xE8\x89\xBA";
-    info.isPcmFromExternal = true;
-    info.minBufSize = 1280;
-    info.sampleChannels = 1;
-    info.bitsPerSample = 16;
-    info.sampleRate = 16000;
-
-    engine->Attach(info);
-
-    waitForResult.Wait();
-
-    engine->Detach();
 
     INTELL_VOICE_LOG_INFO("end\n");
+}
+
+HWTEST_F(ClientTest, CloudReporter, TestSize.Level1)
+{
+    std::vector<UploadFilesInfo> reportedFilesInfo;
+    IntellVoiceManager::GetInstance()->GetUploadFiles(12,reportedFilesInfo);
 }

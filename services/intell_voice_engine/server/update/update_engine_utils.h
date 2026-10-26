@@ -30,6 +30,7 @@ public:
     static bool IsVersionUpdate();
 
 private:
+    static bool IsBackupSourceExist();
 };
 }
 }

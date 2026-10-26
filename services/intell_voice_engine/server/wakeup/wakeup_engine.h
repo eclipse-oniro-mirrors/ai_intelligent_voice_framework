@@ -18,17 +18,11 @@
 #include <string>
 #include "base_macros.h"
 #include "engine_base.h"
+#include "wakeup_engine_impl_facade.h"
 #include "wakeup_engine_impl.h"
-#include "headset_wakeup_engine_impl.h"
 
 namespace OHOS {
 namespace IntellVoiceEngine {
-enum DetectDeviceType {
-    DETECT_TYPE_PHONE = 0,
-    DETECT_TYPE_HEADSET,
-    DETECT_TYPE_BUT
-};
-
 class WakeupEngine : public EngineBase {
 public:
     WakeupEngine();
@@ -50,23 +44,12 @@ public:
     int32_t StartCapturer(int32_t channels) override;
     int32_t Read(std::vector<uint8_t> &data) override;
     int32_t StopCapturer() override;
-    int32_t NotifyHeadsetWakeEvent() override;
-    int32_t NotifyHeadsetHostEvent(HeadsetHostEventType event) override;
+    int32_t NotifyDeviceWakeupEvent(const std::string &macAddress, const EventDetail &event) override;
 
 private:
-    static std::string GetEventValue(int32_t uuid);
-    int32_t HandleHeadsetOff();
-    int32_t HandleHeadsetOn();
     int32_t HandleCapturerMsg(StateMsg &msg);
     static void StartAbility(const std::string &event);
-    USE_ROLE(WakeupEngineImpl);
-
-private:
-    OHOS::IntellVoiceUtils::UniqueProductType<HeadsetWakeupEngineImpl> headsetImpl_ =
-        OHOS::IntellVoiceUtils::UniqueProductType<HeadsetWakeupEngineImpl>(nullptr, nullptr);
-    std::mutex headsetMutex_;
-    sptr<IIntelligentVoiceEngineCallback> callback_ = nullptr;
-    std::atomic<DetectDeviceType> detectDeviceType_ = DETECT_TYPE_PHONE;
+    USE_ROLE(WakeupEngineImplFacade);
 };
 }
 }

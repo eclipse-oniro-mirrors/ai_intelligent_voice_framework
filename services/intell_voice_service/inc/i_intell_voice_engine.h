@@ -23,6 +23,8 @@ enum IntellVoiceEngineType {
     INTELL_VOICE_ENROLL = 0,
     INTELL_VOICE_WAKEUP,
     INTELL_VOICE_UPDATE,
+    INTELL_VOICE_DEVICE,
+    INTELL_VOICE_IMPLICIT_ENROLL,
     ENGINE_TYPE_BUT,
     INTELL_VOICE_HEADSET_OFFSET = 200,
     INTELL_VOICE_HEADSET_WAKEUP = INTELL_VOICE_HEADSET_OFFSET
@@ -39,6 +41,19 @@ enum IntellVoiceUpdateSceneType {
 enum HeadsetHostEventType {
     HEADSET_HOST_OFF = 0,
     HEADSET_HOST_ON = 1,
+};
+
+enum DeviceWakeupEvent {
+    /* voice wakeup */
+    VOICE_RECOGNIZE_EVENT = 0,
+    /* bluetooth device wakeup */
+    BLUETOOTH_HFP_RECOGNIZE_EVENT = 1,
+    EVENT_MAX = 2,
+};
+
+struct EventDetail {
+    DeviceWakeupEvent wakeupEvent = VOICE_RECOGNIZE_EVENT;
+    int32_t endFrameIndex = 0;
 };
 
 struct EvaluationResult {
@@ -74,7 +89,8 @@ public:
         INTELL_VOICE_ENGINE_GET_WAKEUP_PCM,
         INTELL_VOICE_ENGINE_EVALUATE,
         INTELL_VOICE_ENGINE_NOTIFY_HEADSET_WAKE_EVENT,
-        INTELL_VOICE_ENGINE_NOTIFY_HEADSET_HOSTEVENT
+        INTELL_VOICE_ENGINE_NOTIFY_HEADSET_HOSTEVENT,
+        INTELL_VOICE_ENGINE_NOTIFY_DEVICE_WAKEUP_EVENT
     };
 
     virtual void SetCallback(sptr<IRemoteObject> object) = 0;
@@ -90,8 +106,7 @@ public:
     virtual int32_t StopCapturer() = 0;
     virtual int32_t GetWakeupPcm(std::vector<uint8_t> &data) = 0;
     virtual int32_t Evaluate(const std::string &word, EvaluationResult &result) = 0;
-    virtual int32_t NotifyHeadsetWakeEvent() = 0;
-    virtual int32_t NotifyHeadsetHostEvent(HeadsetHostEventType event) = 0;
+    virtual int32_t NotifyDeviceWakeupEvent(const std::string &macAddress, const EventDetail &event) = 0;
 };
 }
 }

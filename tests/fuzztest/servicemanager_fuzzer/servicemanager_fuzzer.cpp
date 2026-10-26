@@ -61,7 +61,6 @@ void IntellVoiceServiceManagerFuzzTest(const uint8_t* data, size_t size)
     manager.HandleUnloadIntellVoiceService(data);
     manager.HandleOnIdle();
     manager.HandleServiceStop();
-    manager.HandleHeadsetHostDie();
     manager.ProcBreathModel();
     manager.CreateSwitchProvider();
     manager.ReleaseSwitchProvider();
@@ -135,8 +134,6 @@ void WakeupEngineFuzzTest(const uint8_t* data, size_t size)
     wakeEngine->StartCapturer(size);
     wakeEngine->Read(pcmData);
     wakeEngine->StopCapturer();
-    wakeEngine->NotifyHeadsetWakeEvent();
-    wakeEngine->NotifyHeadsetHostEvent(*reinterpret_cast<const HeadsetHostEventType *>(data));
     wakeEngine->Stop();
     wakeEngine->Detach();
 
