@@ -16,12 +16,13 @@
 #include "engine_offline_audio_processor.h"
 #include <algorithm>
 #include <fstream>
+#include <securec.h>
 #include "intell_voice_log.h"
 #include "engine_host_manager.h"
 
 #define LOG_TAG "EngineOfflineAudio"
-#define BYTES_PER_FRAME 320
-#define OFFLINE_BYTES_MAX_16K_MONO 5120
+static constexpr uint32_t BYTES_PER_FRAME = 320;
+static constexpr uint32_t OFFLINE_BYTES_MAX_16K_MONO = 5120;
 
 using namespace OHOS::HDI::IntelligentVoice::Engine::V1_0;
 using namespace OHOS::IntellVoiceUtils;
@@ -33,6 +34,11 @@ namespace Engine {
 namespace IntellVoiceEngine {
 
 const std::string OfflineAudioProcessor::CHAIN_NAME_POST_EDIT = "asr_tse_reg";
+
+namespace {
+constexpr size_t HEX_DUMP_BYTES_PER_LINE = 16;   // bytes per line in hex dump log
+constexpr size_t HEX_DUMP_MAX_PRINT_BYTES = 64;  // max bytes printed in hex dump log
+} // namespace
 
 OfflineAudioProcessor::OfflineAudioProcessor()
 {
@@ -58,25 +64,25 @@ void OfflineAudioProcessor::ReleaseResources()
 void OfflineAudioProcessor::PrintAndSaveBuffer(const std::vector<uint8_t>& buffer, const std::string& fileName)
 {
     // 1. Print basic buffer information
-    INTELL_VOICE_LOG_INFO("Buffer info for %{public}s: size=%{public}zu bytes, capacity=%{public}zu", 
+    INTELL_VOICE_LOG_INFO("Buffer info for %{public}s: size=%{public}zu bytes, capacity=%{public}zu",
                          fileName.c_str(), buffer.size(), buffer.capacity());
-    
+
     // 2. Print content of first 64 bytes (hexadecimal format)
     if (!buffer.empty()) {
         std::string hexContent = "First bytes: ";
-        size_t printCount = std::min(buffer.size(), size_t(64));
-        
+        size_t printCount = std::min(buffer.size(), HEX_DUMP_MAX_PRINT_BYTES);
+
         for (size_t i = 0; i < printCount; ++i) {
             char hexByte[8];
             if (sprintf_s(hexByte, sizeof(hexByte), "%02X ", buffer[i]) > 0) {
                 hexContent += hexByte;
             }
 
-            if ((i + 1) % 16 == 0 && i > 0) {
+            if ((i + 1) % HEX_DUMP_BYTES_PER_LINE == 0 && i > 0) {
                 hexContent += "\n              ";
             }
         }
-        
+
         INTELL_VOICE_LOG_INFO("%{public}s", hexContent.c_str());
     }
 
@@ -90,7 +96,7 @@ void OfflineAudioProcessor::PrintAndSaveBuffer(const std::vector<uint8_t>& buffe
         }
         outFile.close();
 
-        INTELL_VOICE_LOG_INFO("Successfully saved PCM file: %{public}s, size=%{public}zu bytes", 
+        INTELL_VOICE_LOG_INFO("Successfully saved PCM file: %{public}s, size=%{public}zu bytes",
                              pcmFileName.c_str(), buffer.size());
     } else {
         INTELL_VOICE_LOG_ERROR("Failed to create PCM file: %{public}s", pcmFileName.c_str());
@@ -100,7 +106,7 @@ void OfflineAudioProcessor::PrintAndSaveBuffer(const std::vector<uint8_t>& buffe
 int32_t OfflineAudioProcessor::GetWakeupBackupAudio(const std::string& filePath, std::vector<uint8_t>& buffer)
 {
     INTELL_VOICE_LOG_DEBUG("GetWakeupBackupAudio path: %{public}s", filePath.c_str());
-    
+
     std::vector<std::string> cloneFiles;
     int32_t ret = EngineHostManager::GetInstance().GetWakeupSourceFilesList(cloneFiles);
     if (ret != 0) {
@@ -144,7 +150,7 @@ std::vector<int> OfflineAudioProcessor::parseFrameNumbers(const std::vector<uint
     std::string line;
 
     std::regex frameRegex(R"((?:beginFrameNo|endFrameNo|cmdBeginFrame|cmdEndFrame)\s*:\s*(\d+))");
-    
+
     while (std::getline(iss, line)) {
         if (line.empty()) {
             continue;
@@ -240,7 +246,7 @@ int32_t OfflineAudioProcessor::ProcessDataWithOfflineEffect(
     while (remainingSize > 0) {
         // Calculate the size to process in this iteration
         size_t currentProcessSize = (remainingSize > maxProcessSize) ? maxProcessSize : remainingSize;
-        INTELL_VOICE_LOG_DEBUG("Processing chunk: offset=%{public}zu, size=%{public}zu, remaining=%{public}zu", 
+        INTELL_VOICE_LOG_DEBUG("Processing chunk: offset=%{public}zu, size=%{public}zu, remaining=%{public}zu",
                               inOffset, currentProcessSize, remainingSize);
         // Call Process interface
         ret_status = offlineEffectChain_->Process(
@@ -275,7 +281,8 @@ int32_t OfflineAudioProcessor::ProcessDataWithOfflineEffect(
     return ret_status;
 }
 
-void OfflineAudioProcessor::LogFrameNumbers(const std::vector<int>& frameNumbers) {
+void OfflineAudioProcessor::LogFrameNumbers(const std::vector<int>& frameNumbers)
+{
     std::ostringstream oss;
     oss << "frameNumbers: ";
     for (size_t i = 0; i < frameNumbers.size(); ++i) {
@@ -316,7 +323,8 @@ int OfflineAudioProcessor::SetOfflineEffectChainParams(const std::vector<int>& f
     return 0;
 }
 
-int32_t OfflineAudioProcessor::ConfigureAudioStreamAndEffectChain() {
+int32_t OfflineAudioProcessor::ConfigureAudioStreamAndEffectChain()
+{
     if (offlineEffectChain_ == nullptr) {
         INTELL_VOICE_LOG_ERROR("offlineEffectChain_ is null");
         return -1;
@@ -352,7 +360,7 @@ int32_t OfflineAudioProcessor::ConfigureAudioStreamAndEffectChain() {
     uint32_t effectInputBufferSize = 0;
     uint32_t effectOutputBufferSize = 0;
     ret = offlineEffectChain_->GetEffectBufferSize(effectInputBufferSize, effectOutputBufferSize);
-    INTELL_VOICE_LOG_INFO("GetEffectBufferSize result: %{public}d, inputSize: %{public}u, outputSize: %{public}u", 
+    INTELL_VOICE_LOG_INFO("GetEffectBufferSize result: %{public}d, inputSize: %{public}u, outputSize: %{public}u",
                         ret, effectInputBufferSize, effectOutputBufferSize);
     if (ret != 0) {
         INTELL_VOICE_LOG_ERROR("Failed to get effect buffer size, ret: %{public}d", ret);
@@ -376,7 +384,7 @@ int32_t OfflineAudioProcessor::ProcessRegistrationCorpusData(std::vector<std::ve
         return -1;
     }
 
-    totalRetStatus += ProcessDataWithOfflineEffect( // First sentence - use data from buffer1 (buffers[0])
+    totalRetStatus += ProcessDataWithOfflineEffect(// First sentence - use data from buffer1 (buffers[0])
         buffers[0].data() + frameNumbers[0] * BYTES_PER_FRAME, // 0 is first wake word begin   buffers[0]
         (frameNumbers[1] - frameNumbers[0] + 1) * BYTES_PER_FRAME, // 1 is first wake word end
         outBuffer, BYTES_PER_FRAME, OFFLINE_BYTES_MAX_16K_MONO);
@@ -384,7 +392,7 @@ int32_t OfflineAudioProcessor::ProcessRegistrationCorpusData(std::vector<std::ve
         buffers[0].data() + frameNumbers[2] * BYTES_PER_FRAME, // 2 is first command word begin   buffers[0]
         (frameNumbers[3] - frameNumbers[2] + 1) * BYTES_PER_FRAME, // 3 is first command word end
         outBuffer, BYTES_PER_FRAME, OFFLINE_BYTES_MAX_16K_MONO);
-    totalRetStatus += ProcessDataWithOfflineEffect( // Second sentence - use data from buffer2 (buffers[1])
+    totalRetStatus += ProcessDataWithOfflineEffect(// Second sentence - use data from buffer2 (buffers[1])
         buffers[1].data() + frameNumbers[4] * BYTES_PER_FRAME, // 4 is second wake word begin   buffers[1]
         (frameNumbers[5] - frameNumbers[4] + 1) * BYTES_PER_FRAME, // 5 is second wake word end
         outBuffer, BYTES_PER_FRAME, OFFLINE_BYTES_MAX_16K_MONO);
@@ -392,7 +400,7 @@ int32_t OfflineAudioProcessor::ProcessRegistrationCorpusData(std::vector<std::ve
         buffers[1].data() + frameNumbers[6] * BYTES_PER_FRAME, // 6 is second command word begin   buffers[1]
         (frameNumbers[7] - frameNumbers[6] + 1) * BYTES_PER_FRAME, // 7 is second command word end
         outBuffer, BYTES_PER_FRAME, OFFLINE_BYTES_MAX_16K_MONO);
-    totalRetStatus += ProcessDataWithOfflineEffect( // Third sentence - use data from buffer3 (buffers[2])
+    totalRetStatus += ProcessDataWithOfflineEffect(// Third sentence - use data from buffer3 (buffers[2])
         buffers[2].data() + frameNumbers[8] * BYTES_PER_FRAME, // 8 is third wake word begin   buffers[2]
         (frameNumbers[9] - frameNumbers[8] + 1) * BYTES_PER_FRAME, // 9 is third wake word end
         outBuffer, BYTES_PER_FRAME, OFFLINE_BYTES_MAX_16K_MONO);
@@ -400,7 +408,6 @@ int32_t OfflineAudioProcessor::ProcessRegistrationCorpusData(std::vector<std::ve
         buffers[2].data() + frameNumbers[10] * BYTES_PER_FRAME, // 10 is third command word begin buffers[2]
         (frameNumbers[11] - frameNumbers[10] + 1) * BYTES_PER_FRAME,  // 11 is third command word end
         outBuffer, BYTES_PER_FRAME, OFFLINE_BYTES_MAX_16K_MONO);
-
     if (totalRetStatus != 0) {
         INTELL_VOICE_LOG_ERROR("Data processing failed with error: %{public}d", totalRetStatus);
     } else {
@@ -410,7 +417,8 @@ int32_t OfflineAudioProcessor::ProcessRegistrationCorpusData(std::vector<std::ve
     return totalRetStatus;
 }
 
-int32_t OfflineAudioProcessor::audio_offline_init(const std::vector<int>& frameNumbers) {
+int32_t OfflineAudioProcessor::audio_offline_init(const std::vector<int>& frameNumbers)
+{
     int32_t ret = CreateOfflineAudioEffectChain(); // 3. Create offline audio effect chain
     if (ret != 0) {
         INTELL_VOICE_LOG_ERROR("Failed to create offline audio effect chain, ret: %{public}d", ret);

@@ -74,10 +74,12 @@ struct Options {
 struct Value {
     std::vector<uint8_t> data;
     Value() = default;
-    Value(const std::string &str) {
+    Value(const std::string &str)
+    {
         data.assign(str.begin(), str.end());
     }
-    std::string ToString() const {
+    std::string ToString() const
+    {
         return std::string(data.begin(), data.end());
     }
 };

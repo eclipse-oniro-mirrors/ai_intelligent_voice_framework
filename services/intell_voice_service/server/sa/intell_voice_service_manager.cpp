@@ -36,7 +36,7 @@ using namespace OHOS::IntellVoiceUtils;
 
 namespace OHOS {
 namespace IntellVoiceEngine {
-static constexpr int32_t WAIT_INTERVAL = 500; //500ms
+static constexpr int32_t WAIT_INTERVAL = 500; // 500ms
 static constexpr uint32_t MAX_TASK_NUM = 2048;
 static constexpr uint32_t WAIT_SWITCH_TIME = 2000;  // 2000ms
 static constexpr uint32_t WAIT_RECORD_START_TIME = 10000; // 10s
@@ -82,11 +82,11 @@ void IntellVoiceServiceManager<T, E>::CreateSwitchProvider()
     }
     RegisterObserver(WAKEUP_KEY);
     RegisterObserver(WHISPER_KEY);
-    if(IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_SHORT_WORD))
+    if (IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_SHORT_WORD))
         RegisterObserver(SHORTWORD_KEY);
-    if(IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_DUAL_MIC))
+    if (IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_DUAL_MIC))
         RegisterObserver(DUALMIC_KEY);
-    if(switchProvider_->QuerySwitchStatus(WAKEUP_KEY) || switchProvider_->QuerySwitchStatus(WHISPER_KEY))
+    if (switchProvider_->QuerySwitchStatus(WAKEUP_KEY) || switchProvider_->QuerySwitchStatus(WHISPER_KEY))
         WakeupTrack::reportWakeupStatus(OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STAGE_SA,
             OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STATE_OPEN,
             OHOS::IntellVoiceUtils::WAKEUP_SWITCH_REASON_INIT);
@@ -181,7 +181,7 @@ bool IntellVoiceServiceManager<T, E>::IsSwitchError(const std::string &key)
         INTELL_VOICE_LOG_ERROR("switchProvider_ is nullptr");
         return true;
     }
- 
+
     return switchProvider_->IsSwitchError(key);
 }
 
@@ -254,7 +254,9 @@ void IntellVoiceServiceManager<T, E>::OnSwitchChange(const std::string &switchKe
 template<typename T, typename E>
 void IntellVoiceServiceManager<T, E>::SetShortWordStatus()
 {
-    if(!IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_SHORT_WORD)) return;
+    if (!IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_SHORT_WORD)) {
+        return;
+    }
     INTELL_VOICE_LOG_INFO("enter");
     if (QuerySwitchStatus(SHORTWORD_KEY)) {
         INTELL_VOICE_LOG_INFO("short_word_switch true");
@@ -268,7 +270,9 @@ void IntellVoiceServiceManager<T, E>::SetShortWordStatus()
 template<typename T, typename E>
 void IntellVoiceServiceManager<T, E>::SetDualMicStatus()
 {
-    if(!IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_DUAL_MIC)) return;
+    if (!IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_DUAL_MIC)) {
+        return;
+    }
     INTELL_VOICE_LOG_INFO("enter");
     if (QuerySwitchStatus(DUALMIC_KEY)) {
         INTELL_VOICE_LOG_INFO("dual_mic_switch true");
@@ -316,7 +320,7 @@ int32_t IntellVoiceServiceManager<T, E>::RegisterWakeupDevice(const std::string 
     INTELL_VOICE_LOG_INFO("enter");
     return E::RegisterWakeupDevice(macAddress, info);
 }
- 
+
 template<typename T, typename E>
 int32_t IntellVoiceServiceManager<T, E>::DeregisterWakeupDevice(const std::string &macAddress)
 {
@@ -382,7 +386,7 @@ bool IntellVoiceServiceManager<T, E>::HandleOnIdle()
     return TaskExecutor::AddSyncTask([this]() -> bool {
             bool needUnload = IsNeedToUnloadService();
             serviceUnloading_ = needUnload;
-            return needUnload; 
+            return needUnload;
         });
 }
 
@@ -1244,8 +1248,10 @@ void IntellVoiceServiceManager<T, E>::InitParameterHandlerMap()
         {"country", [this](const std::string &k, const std::string &v) { HandleCountryInfo(k, v); }},
         {"wakeup_scene", [this](const std::string &k, const std::string &v) { HandleWakeupScene(k, v); }},
 #ifdef SUPPORT_RECORD_WAKEUP_CONCURRENT
-        {"concurrentWhiteList", [this](const std::string &k,const std::string &v) { HandleConcurrentWhiteList(k, v);}},
-        {"concurrentBlackList", [this](const std::string &k,const std::string &v) { HandleConcurrentBlackList(k, v);}},
+        {"concurrentWhiteList",
+            [this](const std::string &k, const std::string &v) { HandleConcurrentWhiteList(k, v); }},
+        {"concurrentBlackList",
+            [this](const std::string &k, const std::string &v) { HandleConcurrentBlackList(k, v); }},
 #endif
     };
     // add TRIGGER_PARAMS

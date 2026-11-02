@@ -24,6 +24,9 @@
 namespace OHOS {
 namespace AudioStandard {
 
+// Default capturer buffer size returned by mock GetBufferSize
+constexpr int32_t MOCK_CAPTURER_BUFFER_SIZE = 4096;
+
 class AudioCapturerCallback {
 public:
     virtual ~AudioCapturerCallback() = default;
@@ -55,7 +58,7 @@ public:
     bool Release() { return true; }
     int32_t GetBufferSize(int32_t& bufferSize)
     {
-        bufferSize = 4096;
+        bufferSize = MOCK_CAPTURER_BUFFER_SIZE;
         return 0;
     }
     template<typename T>

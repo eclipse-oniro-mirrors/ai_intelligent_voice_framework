@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <sys/syscall.h>
+#include <sys/resource.h>
 #include "only_first_wakeup_engine_impl.h"
 
 #include "audio_system_manager.h"
@@ -20,8 +22,6 @@
 #include "intell_voice_util.h"
 #include "string_util.h"
 #include "engine_callback_message.h"
-#include <sys/syscall.h>
-#include <sys/resource.h>
 
 #define LOG_TAG "OnlyFirstWakeupEngineImpl"
 
@@ -34,8 +34,8 @@ namespace IntellVoiceEngine {
 static constexpr uint32_t MIN_BUFFER_SIZE = 640;
 static constexpr uint32_t INTERVAL = 96;
 static const std::string WAKEUP_SOURCE_CHANNEL = "wakeup_source_channel";
-static constexpr int64_t RECOGNIZE_COMPLETE_TIMEOUT_US = 2 * 1000 * 1000; //2s
-static constexpr int64_t READ_CAPTURER_TIMEOUT_US = 10 * 1000 * 1000; //10s
+static constexpr int64_t RECOGNIZE_COMPLETE_TIMEOUT_US = 2 * 1000 * 1000; // 2s
+static constexpr int64_t READ_CAPTURER_TIMEOUT_US = 10 * 1000 * 1000; // 10s
 static constexpr int def_priority = 0; // prio 20 = 20 - (0)
 static constexpr int high_priority = -20; // prio 40 = 20 - (-20)
 OnlyFirstWakeupEngineImpl::OnlyFirstWakeupEngineImpl()
@@ -141,7 +141,7 @@ bool OnlyFirstWakeupEngineImpl::StartAudioSource()
             ReadBufferCallback(buffer, size, isEnd);
         },
         [&]() {
-               INTELL_VOICE_LOG_INFO("read %{public}d frame", INTERVAL);
+            INTELL_VOICE_LOG_INFO("read %{public}d frame", INTERVAL);
         });
     if (listener == nullptr) {
         INTELL_VOICE_LOG_ERROR("create listener failed");

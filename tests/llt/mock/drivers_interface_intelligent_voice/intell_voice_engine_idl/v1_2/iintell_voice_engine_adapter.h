@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2026-2026. All rights reserved.
+ */
+/*
  * Copyright (c) 2026 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License")
  * you may not use this file except in compliance with the License.
@@ -21,8 +24,8 @@
 #include <vector>
 #include "hdf_base.h"
 #include "hdi_base.h"
-#include "../v1_0/iintell_voice_engine_adapter.h"
 #include "intell_voice_engine_types.h"
+#include "../v1_0/iintell_voice_engine_adapter.h"
 
 #ifndef HDI_BUFF_MAX_SIZE
 #define HDI_BUFF_MAX_SIZE (1024 * 200)
@@ -34,23 +37,6 @@
 
 #ifndef HDI_MAP_MAX_SIZE
 #define HDI_MAP_MAX_SIZE 102400000
-#endif
-
-#ifndef HDI_CHECK_VALUE_RETURN
-#define HDI_CHECK_VALUE_RETURN(lv, compare, rv, ret) do { \
-    if ((lv) compare (rv)) { \
-        return ret; \
-    } \
-} while (false)
-#endif
-
-#ifndef HDI_CHECK_VALUE_RET_GOTO
-#define HDI_CHECK_VALUE_RET_GOTO(lv, compare, rv, ret, value, table) do { \
-    if ((lv) compare (rv)) { \
-        ret = value; \
-        goto table; \
-    } \
-} while (false)
 #endif
 
 namespace OHOS {
@@ -71,6 +57,10 @@ class IIntellVoiceEngineAdapter : public OHOS::HDI::IntelligentVoice::Engine::V1
 public:
     DECLARE_HDI_DESCRIPTOR(u"ohos.hdi.intelligent_voice.engine.v1_2.IIntellVoiceEngineAdapter")
 
+    // HDI interface version reported by GetVersion
+    static constexpr uint32_t INTERFACE_MAJOR_VERSION = 1;
+    static constexpr uint32_t INTERFACE_MINOR_VERSION = 2;
+
     virtual ~IIntellVoiceEngineAdapter() = default;
 
     static sptr<OHOS::HDI::IntelligentVoice::Engine::V1_2::IIntellVoiceEngineAdapter> CastFrom(
@@ -83,8 +73,8 @@ public:
 
     int32_t GetVersion(uint32_t& majorVer, uint32_t& minorVer) override
     {
-        majorVer = 1;
-        minorVer = 2;
+        majorVer = INTERFACE_MAJOR_VERSION;
+        minorVer = INTERFACE_MINOR_VERSION;
         return HDF_SUCCESS;
     }
 

@@ -35,23 +35,6 @@
 #define HDI_MAP_MAX_SIZE 102400000
 #endif
 
-#ifndef HDI_CHECK_VALUE_RETURN
-#define HDI_CHECK_VALUE_RETURN(lv, compare, rv, ret) do { \
-    if ((lv) compare (rv)) { \
-        return ret; \
-    } \
-} while (false)
-#endif
-
-#ifndef HDI_CHECK_VALUE_RET_GOTO
-#define HDI_CHECK_VALUE_RET_GOTO(lv, compare, rv, ret, value, table) do { \
-    if ((lv) compare (rv)) { \
-        ret = value; \
-        goto table; \
-    } \
-} while (false)
-#endif
-
 namespace OHOS {
 namespace HDI {
 namespace IntelligentVoice {

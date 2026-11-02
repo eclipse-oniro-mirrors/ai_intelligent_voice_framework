@@ -62,14 +62,12 @@ EngineDeviceManager::~EngineDeviceManager()
  
 void EngineDeviceManager::OnAudioPolicyServiceUp()
 {
-    try
-    {
+    try {
         std::lock_guard<std::mutex> lock(audioMutex_);
         INTELL_VOICE_LOG_INFO("enter");
         SetAudioPolicyListener();
         InitAudioDevice();
-    } catch(...)
-    {
+    } catch(...) {
         INTELL_VOICE_LOG_ERROR("init failed");
     }
 }

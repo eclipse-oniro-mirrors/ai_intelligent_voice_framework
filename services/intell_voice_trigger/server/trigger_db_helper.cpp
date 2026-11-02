@@ -29,7 +29,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace IntellVoiceTrigger {
-enum {
+enum TriggerDbVersion {
     VERSION_ADD_MODEL_TYPE = 2,
 };
 static const std::string TABLE_NAME = "trigger";

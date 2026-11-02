@@ -13,9 +13,10 @@
  * limitations under the License.
  */
 #include <any>
-#include "intell_voice_trigger_registrar.h"
+
 #include "trigger_callback_message.h"
 #include "intell_voice_log.h"
+#include "intell_voice_trigger_registrar.h"
 
 #define LOG_TAG "IntellVoiceTriggerRegistrar"
 using namespace OHOS::IntellVoiceTrigger;

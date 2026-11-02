@@ -152,7 +152,7 @@ private:
     void HandleConcurrentWhiteList(const std::string &key, const std::string &value);
     int32_t HandleDataClear(const std::string &key, const std::string &value);
     int32_t HandleEngineRelease(const std::string &key, const std::string &value);
-    void HandleConcurrentBlackList(const std::string &key, const std::string &value); 
+    void HandleConcurrentBlackList(const std::string &key, const std::string &value);
     void InitParameterHandlerMap();
 
 private:

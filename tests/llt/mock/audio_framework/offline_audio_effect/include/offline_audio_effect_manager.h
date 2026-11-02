@@ -25,6 +25,9 @@
 namespace OHOS {
 namespace AudioStandard {
 
+// Default effect buffer sizes returned by mock GetEffectBufferSize
+constexpr uint32_t MOCK_EFFECT_BUFFER_SIZE = 4096;
+
 struct OfflineEffectInfo {
     std::string effectName_;
     bool isEnabled_;
@@ -69,8 +72,8 @@ public:
 
     virtual int32_t GetEffectBufferSize(uint32_t& inputBufferSize, uint32_t& outputBufferSize)
     {
-        inputBufferSize = 4096;
-        outputBufferSize = 4096;
+        inputBufferSize = MOCK_EFFECT_BUFFER_SIZE;
+        outputBufferSize = MOCK_EFFECT_BUFFER_SIZE;
         return 0;
     }
 

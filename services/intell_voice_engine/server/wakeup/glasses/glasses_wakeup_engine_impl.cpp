@@ -16,30 +16,30 @@
 #include "intell_voice_log.h"
 #include "idevmgr_hdi.h"
 #include "intell_voice_definitions.h"
- 
+
 #define LOG_TAG "GlassesWakeupEngineImpl"
 
 using namespace OHOS::HDI::IntelligentVoice::Engine::V1_0;
 using namespace OHOS::IntellVoiceUtils;
 using namespace std;
- 
+
 namespace OHOS {
 namespace IntellVoiceEngine {
-static constexpr int64_t RECOGNIZING_TIMEOUT_US = 10 * 1000 * 1000; //10s
-static constexpr int64_t RECOGNIZE_COMPLETE_TIMEOUT_US = 2 * 1000 * 1000; //2s
-static constexpr int64_t READ_CAPTURER_TIMEOUT_US = 10 * 1000 * 1000; //10s
+static constexpr int64_t RECOGNIZING_TIMEOUT_US = 10 * 1000 * 1000; // 10s
+static constexpr int64_t RECOGNIZE_COMPLETE_TIMEOUT_US = 2 * 1000 * 1000; // 2s
+static constexpr int64_t READ_CAPTURER_TIMEOUT_US = 10 * 1000 * 1000; // 10s
 static constexpr uint32_t MAX_HEADSET_TASK_NUM = 200;
 static const std::string GLASSES_THREAD_NAME = "GlassesThread";
- 
+
 GlassesWakeupEngineImpl::GlassesWakeupEngineImpl() : ModuleStates(State(IDLE), "GlassesWakeupEngineImpl"),
     TaskExecutor(GLASSES_THREAD_NAME, MAX_HEADSET_TASK_NUM), BaseWakeupEngineImpl()
 {
 }
- 
+
 GlassesWakeupEngineImpl::~GlassesWakeupEngineImpl()
 {
 }
- 
+
 bool GlassesWakeupEngineImpl::Init()
 {
     if (!InitStates()) {
@@ -56,7 +56,7 @@ bool GlassesWakeupEngineImpl::Init()
     mCloudReporter = std::make_shared<AccessoriesCloudReporter>("ai_glass");
     return true;
 }
- 
+
 bool GlassesWakeupEngineImpl::InitStates()
 {
     for (int i = IDLE; i <= READ_CAPTURER; i++) {
@@ -64,11 +64,11 @@ bool GlassesWakeupEngineImpl::InitStates()
             .ACT(SET_LISTENER, HandleSetListener)
             .ACT(SET_PARAM, HandleSetParam);
     }
- 
+
     ForState(IDLE)
         .ACT(INIT, HandleInit)
         .ACT(RESET_ADAPTER, HandleResetAdapter);
- 
+
     ForState(INITIALIZED)
         .ACT(START_RECOGNIZE, HandleStart);
 
@@ -82,30 +82,30 @@ bool GlassesWakeupEngineImpl::InitStates()
         .WaitUntil(RECOGNIZE_COMPLETE_TIMEOUT, std::bind(&GlassesWakeupEngineImpl::HandleStopCapturer,
             this, std::placeholders::_1, std::placeholders::_2), RECOGNIZE_COMPLETE_TIMEOUT_US)
         .ACT(START_CAPTURER, HandleStartCapturer);
- 
+
     ForState(READ_CAPTURER)
         .WaitUntil(READ_CAPTURER_TIMEOUT, std::bind(&GlassesWakeupEngineImpl::HandleStopCapturer,
             this, std::placeholders::_1, std::placeholders::_2), READ_CAPTURER_TIMEOUT_US)
         .ACT(READ, HandleRead)
         .ACT(STOP_CAPTURER, HandleStopCapturer);
- 
+
     FromState(INITIALIZING, READ_CAPTURER)
         .ACT(RELEASE_ADAPTER, HandleRelease)
         .ACT(RELEASE, HandleRelease);
- 
+
     return IsStatesInitSucc();
 }
- 
+
 int32_t GlassesWakeupEngineImpl::Handle(const StateMsg &msg)
 {
     if (!IsStatesInitSucc()) {
         INTELL_VOICE_LOG_ERROR("failed to init state");
         return -1;
     }
- 
+
     return ModuleStates::HandleMsg(msg);
 }
- 
+
 int32_t GlassesWakeupEngineImpl::HandleInit(const StateMsg & /* msg */, State &nextState)
 {
     INTELL_VOICE_LOG_INFO("enter");
@@ -127,7 +127,7 @@ int32_t GlassesWakeupEngineImpl::HandleSetListener(const StateMsg &msg, State & 
         INTELL_VOICE_LOG_ERROR("listenerMsg or adapter listener is nullptr");
         return -1;
     }
- 
+
     adapterListener_->SetCallback(listenerMsg->callback);
     return 0;
 }
@@ -161,7 +161,7 @@ void GlassesWakeupEngineImpl::OnWakeupEvent(
         INTELL_VOICE_LOG_INFO("msgId error");
     }
 }
- 
+
 void GlassesWakeupEngineImpl::OnWakeupRecognition(int32_t result, const std::string &info)
 {
     INTELL_VOICE_LOG_INFO("enter, result:%{public}d", result);
@@ -192,18 +192,18 @@ void GlassesWakeupEngineImpl::ReadThread()
         WakeupSourceProcess::Write({ audioStream });
     }
 }
- 
+
 bool GlassesWakeupEngineImpl::StartAudioSource()
 {
     INTELL_VOICE_LOG_INFO("enter");
     isReading_.store(true);
     WakeupSourceProcess::Init(1);
- 
+
     std::thread t1(std::bind(&GlassesWakeupEngineImpl::ReadThread, this));
     readThread_ = std::move(t1);
     return true;
 }
- 
+
 void GlassesWakeupEngineImpl::StopAudioSource()
 {
     if (!isReading_.load()) {
@@ -214,7 +214,7 @@ void GlassesWakeupEngineImpl::StopAudioSource()
     readThread_.join();
     GlassesWakeupWrapper::GetInstance().StopReadingStream();
     WakeupSourceProcess::Release();
-    if(!mCloudReporter) {
+    if (!mCloudReporter) {
         return;
     }
     if (mCloudReporter->CreateReportDir()) {
@@ -224,7 +224,7 @@ void GlassesWakeupEngineImpl::StopAudioSource()
         }
     }
 }
- 
+
 int32_t GlassesWakeupEngineImpl::HandleStartCapturer(const StateMsg &msg, State &nextState)
 {
     INTELL_VOICE_LOG_INFO("enter");
@@ -237,7 +237,7 @@ int32_t GlassesWakeupEngineImpl::HandleStartCapturer(const StateMsg &msg, State 
     nextState = State(READ_CAPTURER);
     return 0;
 }
- 
+
 int32_t GlassesWakeupEngineImpl::HandleRead(const StateMsg &msg, State & /* nextState */)
 {
     CapturerData *capturerData = reinterpret_cast<CapturerData *>(msg.outMsg);
@@ -246,11 +246,11 @@ int32_t GlassesWakeupEngineImpl::HandleRead(const StateMsg &msg, State & /* next
         INTELL_VOICE_LOG_ERROR("read capturer data failed");
         return ret;
     }
- 
+
     ResetTimerDelay();
     return 0;
 }
- 
+
 int32_t GlassesWakeupEngineImpl::HandleStopCapturer(const StateMsg & /* msg */, State &nextState)
 {
     INTELL_VOICE_LOG_INFO("enter");
@@ -258,7 +258,7 @@ int32_t GlassesWakeupEngineImpl::HandleStopCapturer(const StateMsg & /* msg */, 
     nextState = State(INITIALIZED);
     return 0;
 }
- 
+
 int32_t GlassesWakeupEngineImpl::HandleRecognizingTimeout(const StateMsg & /* msg */, State &nextState)
 {
     INTELL_VOICE_LOG_INFO("enter");
@@ -286,11 +286,11 @@ int32_t GlassesWakeupEngineImpl::HandleRecognizeComplete(const StateMsg &msg, St
     if (adapterListener_ != nullptr) {
         adapterListener_->Notify(*event);
     }
- 
+
     if (event->result != 0) {
         INTELL_VOICE_LOG_ERROR("wakeup failed");
         nextState = State(INITIALIZED);
-    } else { 
+    } else {
         if (!StartAudioSource()) {
             INTELL_VOICE_LOG_ERROR("start audio source failed");
             return -1;
@@ -313,7 +313,7 @@ int32_t GlassesWakeupEngineImpl::HandleResetAdapter(const StateMsg & /* msg */, 
     nextState = State(INITIALIZED);
     return 0;
 }
- 
+
 int32_t GlassesWakeupEngineImpl::HandleRelease(const StateMsg & /* msg */, State &nextState)
 {
     StopAudioSource();
@@ -321,7 +321,7 @@ int32_t GlassesWakeupEngineImpl::HandleRelease(const StateMsg & /* msg */, State
     nextState = State(IDLE);
     return 0;
 }
- 
+
 int32_t GlassesWakeupEngineImpl::HandleSetParam(const StateMsg & /* msg */, State & /* nextState */)
 {
     INTELL_VOICE_LOG_INFO("no need process");
@@ -334,7 +334,7 @@ bool GlassesWakeupEngineImpl::Create(std::shared_ptr<StateInfoListener> stateLis
     ModuleStates::SetProcessType(PROCESS_WAKEUP_GLASSES);
     return Init();
 }
- 
+
 bool GlassesWakeupEngineImpl::Destroy()
 {
     StateMsg msg(RELEASE);
@@ -344,7 +344,7 @@ bool GlassesWakeupEngineImpl::Destroy()
     TaskExecutor::StopThread();
     return true;
 }
- 
+
 void GlassesWakeupEngineImpl::OnTriggerDetected(int32_t /* uuid */,
     const std::shared_ptr<WakeupDeviceDetail>& wakeupDevice, const EventDetail &event)
 {

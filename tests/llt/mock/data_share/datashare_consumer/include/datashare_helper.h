@@ -38,9 +38,6 @@ private:
 
 using DatashareBusinessError = DataShareBusinessError;
 
-class DataShareResultSet;
-class DataSharePredicates;
-
 class Uri {
 public:
     Uri(const std::string &uriString) : uriString_(uriString) {}
@@ -53,6 +50,56 @@ public:
 
 private:
     std::string uriString_;
+};
+
+class DataShareResultSet {
+public:
+    DataShareResultSet() = default;
+    virtual ~DataShareResultSet() = default;
+
+    int Close()
+    {
+        return 0;
+    }
+
+    int GoToRow(int32_t index)
+    {
+        (void)index;
+        return 0;
+    }
+
+    int GetRowCount(int32_t &count)
+    {
+        count = 0;
+        return 0;
+    }
+
+    int GetString(int32_t col, std::string &value)
+    {
+        (void)col;
+        value = "";
+        return 0;
+    }
+
+    int GetInt(int32_t col, int32_t &value)
+    {
+        (void)col;
+        value = 0;
+        return 0;
+    }
+};
+
+class DataSharePredicates {
+public:
+    DataSharePredicates() = default;
+    virtual ~DataSharePredicates() = default;
+
+    DataSharePredicates& EqualTo(const std::string &field, const std::string &value)
+    {
+        (void)field;
+        (void)value;
+        return *this;
+    }
 };
 
 class DataShareHelper {
@@ -125,56 +172,6 @@ public:
     int Release()
     {
         return 0;
-    }
-};
-
-class DataShareResultSet {
-public:
-    DataShareResultSet() = default;
-    virtual ~DataShareResultSet() = default;
-
-    int Close()
-    {
-        return 0;
-    }
-
-    int GoToRow(int32_t index)
-    {
-        (void)index;
-        return 0;
-    }
-
-    int GetRowCount(int32_t &count)
-    {
-        count = 0;
-        return 0;
-    }
-
-    int GetString(int32_t col, std::string &value)
-    {
-        (void)col;
-        value = "";
-        return 0;
-    }
-
-    int GetInt(int32_t col, int32_t &value)
-    {
-        (void)col;
-        value = 0;
-        return 0;
-    }
-};
-
-class DataSharePredicates {
-public:
-    DataSharePredicates() = default;
-    virtual ~DataSharePredicates() = default;
-
-    DataSharePredicates& EqualTo(const std::string &field, const std::string &value)
-    {
-        (void)field;
-        (void)value;
-        return *this;
     }
 };
 

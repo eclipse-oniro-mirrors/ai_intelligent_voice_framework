@@ -39,7 +39,6 @@ OnlyFirstWakeupEngine::~OnlyFirstWakeupEngine()
 
 int32_t OnlyFirstWakeupEngine::HandleCapturerMsg(StateMsg &msg)
 {
-
     return ROLE(OnlyFirstWakeupEngineImpl).Handle(msg);
 }
 

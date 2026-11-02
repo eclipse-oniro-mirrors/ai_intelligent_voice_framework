@@ -46,14 +46,14 @@ WakeupEngine::~WakeupEngine()
 void WakeupEngine::OnDetected(int32_t uuid)
 {
     INTELL_VOICE_LOG_INFO("enter, uuid is %{public}d", uuid);
-    if(uuid == VOICE_WAKEUP_MODEL_UUID) {
+    if (uuid == VOICE_WAKEUP_MODEL_UUID) {
         WakeupTrack::reportWakeupStart(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_WAKEUP_DETECTED,
             OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END);
     } else if (uuid == PROXIMAL_WAKEUP_MODEL_UUID) {
         WakeupTrack::reportWakeupStart(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_WHISPER_DETECTED,
-            OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END); 
+            OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END);
     }
-    
+
     ROLE(WakeupEngineImplFacade).OnTriggerDetected(uuid, DEFAULT_MAC_ADDRESS, { VOICE_RECOGNIZE_EVENT, 0 });
 }
 

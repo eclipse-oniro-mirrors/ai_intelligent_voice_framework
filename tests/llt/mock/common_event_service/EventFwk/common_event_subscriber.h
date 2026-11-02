@@ -43,16 +43,6 @@ private:
     MatchingSkills matchingSkills_;
 };
 
-class CommonEventData;
-class CommonEventSubscriber;
-
-class CommonEventSubscriber {
-public:
-    explicit CommonEventSubscriber(const CommonEventSubscribeInfo &subscribeInfo) {}
-    virtual ~CommonEventSubscriber() = default;
-    virtual void OnReceiveEvent(const CommonEventData &eventData) {}
-};
-
 class CommonEventData {
 public:
     CommonEventData() = default;
@@ -60,6 +50,13 @@ public:
     const OHOS::AppExecFwk::Want& GetWant() const { return want_; }
 private:
     OHOS::AppExecFwk::Want want_;
+};
+
+class CommonEventSubscriber {
+public:
+    explicit CommonEventSubscriber(const CommonEventSubscribeInfo &subscribeInfo) {}
+    virtual ~CommonEventSubscriber() = default;
+    virtual void OnReceiveEvent(const CommonEventData &eventData) {}
 };
 
 class CommonEventManager {

@@ -22,14 +22,17 @@
 namespace OHOS {
 namespace AudioStandard {
 
+// Default mock sampling rate (16 kHz)
+constexpr uint32_t MOCK_DEFAULT_SAMPLE_RATE = 16000;
+
 struct AudioSampleAttributes {
-    uint32_t samplingRate = 16000;
+    uint32_t samplingRate = MOCK_DEFAULT_SAMPLE_RATE;
     uint8_t channel = 1;
     uint8_t format = 1;
     uint8_t interleave = 0;
     uint32_t frameSize = 0;
-    uint32_t stereoSamplingRate = 16000;
-    uint32_t monoSamplingRate = 16000;
+    uint32_t stereoSamplingRate = MOCK_DEFAULT_SAMPLE_RATE;
+    uint32_t monoSamplingRate = MOCK_DEFAULT_SAMPLE_RATE;
 };
 
 } // namespace AudioStandard

@@ -50,7 +50,6 @@ private:
     int32_t endIndex_ = 0;
     int32_t beginIndex_ = 0;
     int32_t indexCount_ = 0;
-
 };
 }
 }

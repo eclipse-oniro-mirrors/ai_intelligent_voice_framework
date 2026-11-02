@@ -75,7 +75,7 @@ int SilenceUpdateStrategy::OnUpdateCompleteCallback(const int result, bool isLas
         return 0;
     }
 
-    if(result == UPDATE_STATE_CONCURRENT) {
+    if (result == UPDATE_STATE_CONCURRENT) {
         INTELL_VOICE_LOG_INFO("update engine conrrent");
         return 0;
     }

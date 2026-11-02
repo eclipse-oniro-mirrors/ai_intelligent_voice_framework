@@ -45,7 +45,7 @@ static constexpr uint32_t INTERVAL = 125; // 125 * 40ms = 5s
 static constexpr uint32_t WITHCMD_INTERVAL = 200; // 200 * 40ms = 8s
 static constexpr uint32_t MAX_ENROLL_TASK_NUM = 100;
 static constexpr std::string_view DEFAULT_WAKEUP_PHRASE = "\xE5\xB0\x8F\xE8\x89\xBA\xE5\xB0\x8F\xE8\x89\xBA";
-static constexpr int64_t RECOGNIZING_TIMEOUT_US = 5 * 60 * 1000 * 1000; //5min
+static constexpr int64_t RECOGNIZING_TIMEOUT_US = 5 * 60 * 1000 * 1000; // 5min
 static const std::string ENGINE_NAME = "ImplicitEnrollEngine";
 static const std::string ENROLL_THREAD_NAME = "ImplicitEnrollEngThread";
 static const std::string STATE_THREAD_NAME = "ImplicitEnrollStateThread";
@@ -131,9 +131,8 @@ int32_t ImplicitEnrollEngine::Handle(const StateMsg &msg)
 int32_t ImplicitEnrollEngine::HandleInit(const StateMsg & /* msg */, State &nextState)
 {
     INTELL_VOICE_LOG_INFO("enter");
-    if (!EngineUtil::CreateAdapterInner(EngineHostManager::GetInstance(), 
-        static_cast<HDI::IntelligentVoice::Engine::V1_0::IntellVoiceEngineAdapterType>(IMPLICIT_ENROLL_ADAPTER_TYPE)))
-    {
+    if (!EngineUtil::CreateAdapterInner(EngineHostManager::GetInstance(),
+        static_cast<HDI::IntelligentVoice::Engine::V1_0::IntellVoiceEngineAdapterType>(IMPLICIT_ENROLL_ADAPTER_TYPE))) {
         INTELL_VOICE_LOG_ERROR("failed to create adapter");
         return -1;
     }
@@ -189,7 +188,7 @@ int32_t ImplicitEnrollEngine::HandleStart(const StateMsg &msg, State &nextState)
     if (!CheckParams(param->strParam)) {
         INTELL_VOICE_LOG_ERROR("invalid param");
         return -1;
-    } 
+    }
     TaskExecutor::AddAsyncTask([this, stage = stage_, startTime = startTime_, endTime = endTime_]() {
         INTELL_VOICE_LOG_INFO("start enroll, stage: %{public}s", stage.c_str());
         EngineUtil::SetParameter(STAGE_TXT + stage);
@@ -328,7 +327,6 @@ bool ImplicitEnrollEngine::CheckParams(const std::string &param)
         return false;
     }
     stage_ = root["stage"].asString();
-
     if (stage_ == VERIFY_STAGE) {
         if ((!root.isMember("bundle_name")) || (!root["bundle_name"].isString())) {
             INTELL_VOICE_LOG_ERROR("miss key: bundle_name");

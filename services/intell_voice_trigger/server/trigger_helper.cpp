@@ -547,18 +547,18 @@ bool TriggerHelper::IsConflictSceneActive()
     INTELL_VOICE_LOG_INFO("captureActive: %{public}d, concurrentcapture: %{public}d",
     audioCaptureActive_, audioConcurrentCapture_);
 
-    if(mVoipConcurrency_ && !mCallConcurrency_) {
+    if (mVoipConcurrency_ && !mCallConcurrency_) {
         return systemHibernate_ || (audioScene_ != AUDIO_SCENE_DEFAULT && audioScene_ != AUDIO_SCENE_PHONE_CHAT
         && audioScene_ != AUDIO_SCENE_RINGING) || (!audioConcurrentCapture_ && audioCaptureActive_);
     }
 
-    if(mVoipConcurrency_ && mCallConcurrency_) {
+    if (mVoipConcurrency_ && mCallConcurrency_) {
         return systemHibernate_ || (audioScene_ != AUDIO_SCENE_DEFAULT && audioScene_ != AUDIO_SCENE_PHONE_CHAT &&
-        audioScene_ != AUDIO_SCENE_PHONE_CALL && audioScene_ != AUDIO_SCENE_RINGING) || 
+        audioScene_ != AUDIO_SCENE_PHONE_CALL && audioScene_ != AUDIO_SCENE_RINGING) ||
        (!audioConcurrentCapture_ && audioCaptureActive_);
     }
 
-    return callActive_ || systemHibernate_ || (audioScene_ != AUDIO_SCENE_DEFAULT) || 
+    return callActive_ || systemHibernate_ || (audioScene_ != AUDIO_SCENE_DEFAULT) ||
        (!audioConcurrentCapture_ && audioCaptureActive_);
 #else
     INTELL_VOICE_LOG_INFO("callActive: %{public}d, audioCaptureActive: %{public}d, systemHibernate: %{public}d",
@@ -691,7 +691,7 @@ void TriggerHelper::TelephonyStateObserver::OnCallStateUpdated(
 
 void TriggerHelper::OnAudioSceneChange(const AudioScene audioScene)
 {
-    {    
+    {
         lock_guard<std::mutex> lock(mutex_);
         if (audioScene_ == audioScene) {
             return;
@@ -738,7 +738,8 @@ void TriggerHelper::ClearConcurrentControlList(bool isWhiteList, bool isBlackLis
 
 void TriggerHelper::ParseSourceTypes(const Json::Value& sources,
                             std::set<SourceType>& outSourceTypes,
-                            std::set<SourceType>& globalTypeSet) {
+                            std::set<SourceType>& globalTypeSet)
+{
     if (!sources.isArray()) {
         return;
     }
@@ -764,15 +765,15 @@ void TriggerHelper::SetConcurrencyControlList(concurrencyControlList listType)
 {
     INTELL_VOICE_LOG_INFO("enter");
     std::string value;
-    if(listType == concurrencyControlList::WHITELIST) {
+    if (listType == concurrencyControlList::WHITELIST) {
         concurrentWhitelist_.clear();
         concurrentTypeSet_.clear();
         value = IntellVoiceUtils::HistoryInfoMgr::GetInstance().GetStringKVPair("concurrentWhiteList");
-    } else if(listType == concurrencyControlList::BLACKLIST) {
+    } else if (listType == concurrencyControlList::BLACKLIST) {
         concurrentBlacklist_.clear();
         value = IntellVoiceUtils::HistoryInfoMgr::GetInstance().GetStringKVPair("concurrentBlackList");
     }
-    
+
     if (value.empty()) {
         INTELL_VOICE_LOG_ERROR("list is empty");
         return;
@@ -791,17 +792,18 @@ void TriggerHelper::SetConcurrencyControlList(concurrencyControlList listType)
         std::string bundleName = item["bundleName"].asString();
         std::set<SourceType> sourceTypes;
         std::set<SourceType> Types;
-        if(listType == concurrencyControlList::WHITELIST) {
+        if (listType == concurrencyControlList::WHITELIST) {
             ParseSourceTypes(item["sourceTypes"], sourceTypes, concurrentTypeSet_);
             concurrentWhitelist_[std::move(bundleName)] = std::move(sourceTypes);
-        } else if(listType == concurrencyControlList::BLACKLIST) {
+        } else if (listType == concurrencyControlList::BLACKLIST) {
             ParseSourceTypes(item["sourceTypes"], sourceTypes, Types);
             concurrentBlacklist_[std::move(bundleName)] = std::move(sourceTypes);
         }
     }
 }
 
-void TriggerHelper::AttachAudioEngineListener() {
+void TriggerHelper::AttachAudioEngineListener()
+{
     INTELL_VOICE_LOG_INFO("enter");
     std::lock_guard<std::mutex> lock(capturerMutex_);
     if (isCapturerDetached_) {
@@ -824,35 +826,23 @@ void TriggerHelper::AttachAudioEngineListener() {
         return;
     }
     INTELL_VOICE_LOG_INFO("RegisterInputPipeChangeCallback success");
-    if(IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_CAMERA_CONCURRENCY)) {
+    if (IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_CAMERA_CONCURRENCY)) {
         mCameraConcurrency_ = true;
     }
     // 同样逻辑新加concurrent extension
-    if(IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_EXTENSION_CONCURRENCY)) {
+    if (IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_EXTENSION_CONCURRENCY)) {
         mExtensionConcurrency_ = true;
     }
-    if(IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_VOIP_CONCURRENCY)) {
+    if (IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_VOIP_CONCURRENCY)) {
         mVoipConcurrency_ = false;
     }
-    if(IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_CALL_CONCURRENCY)) {
+    if (IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_CALL_CONCURRENCY)) {
         mCallConcurrency_ = true;
         ExtensionConcurrentTypeSet_.insert(SOURCE_TYPE_VOICE_CALL);
     }
-
-    std::vector<std::shared_ptr<AudioInputPipeInfo>> inputPipeInfos;
-    ret = audioEngineManager->GetCurrentInputPipeChangeInfos(inputPipeInfos);
-    if(ret != 0) {
-        INTELL_VOICE_LOG_WARN("Get pipeinfos fail");
-        return;
-    }
-    for(auto& pipeinfo : inputPipeInfos) {
-        if(pipeinfo == nullptr) {
-            INTELL_VOICE_LOG_WARN("null pipeinfo");
-            continue;
-        }
-        mFirstProc = true;
-        audioInputPipeCallback_->OnInputPipeChange(PIPE_CHANGE_TYPE_PIPE_STREAM,pipeinfo);
-    }
+    const std::shared_ptr<AudioInputPipeInfo> pipeinfo;
+    mFirstProc = true;
+    audioInputPipeCallback_->OnInputPipeChange(PIPE_CHANGE_TYPE_PIPE_STREAM, pipeinfo);
 }
 
 void TriggerHelper::DetachAudioEngineListener()
@@ -880,7 +870,7 @@ void TriggerHelper::AudioInputPipeListener::ExecuteStateTransition(
         case captureMethod::SAME_STATE:
             INTELL_VOICE_LOG_INFO("same state");
             concurrencyKey = helper_->whitelistWhisperEnbale_? "enablewhisper" : "disablewhisper";
-            if(helper_->mExtensionConcurrency_) {
+            if (helper_->mExtensionConcurrency_) {
                 helper_->SetParameterForInputPipe("concurrent_capture", concurrencyKey);
             }
             break;
@@ -912,11 +902,11 @@ void TriggerHelper::AudioInputPipeListener::ExecuteStateTransition(
             break;
         case captureMethod::DO_NO_CONCURRENT_STOP_AND_CONCURRENT_OPEN_SOURCE:
             INTELL_VOICE_LOG_INFO("do no concurrent stop and concurrent open");
-            if (modelData->GetState() != MODEL_STARTED) {
+            if (modelData != nullptr && modelData->GetState() != MODEL_STARTED) {
                 helper_->StartRecognition(modelData);
             }
             concurrencyKey = helper_->whitelistWhisperEnbale_? "start_withwhisper" : "start_nowhisper";
-            if(helper_->mExtensionConcurrency_) {
+            if (helper_->mExtensionConcurrency_) {
                 helper_->SetParameterForInputPipe("concurrent_capture", concurrencyKey);
             } else {
                 helper_->SetParameterForInputPipe("concurrent_capture", "start");
@@ -925,7 +915,8 @@ void TriggerHelper::AudioInputPipeListener::ExecuteStateTransition(
     }
 }
 
-std::string TriggerHelper::GetBundleName(int uid) {
+std::string TriggerHelper::GetBundleName(int uid)
+{
     std::string bundleName = "";
     auto systemAbilityManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     sptr<IRemoteObject> remoteObject = systemAbilityManager->CheckSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
@@ -934,7 +925,7 @@ std::string TriggerHelper::GetBundleName(int uid) {
         return bundleName;
     }
     sptr<AppExecFwk::IBundleMgr> bundleMgrProxy = OHOS::iface_cast<AppExecFwk::IBundleMgr>(remoteObject);
-    if(!bundleMgrProxy->GetBundleNameForUid(uid, bundleName)) {
+    if (!bundleMgrProxy->GetBundleNameForUid(uid, bundleName)) {
         INTELL_VOICE_LOG_WARN("get bundle name failed");
         return "";
     }
@@ -964,12 +955,13 @@ bool TriggerHelper::AudioInputPipeListener::CheckCallConflict()
     return false;
 }
 
-bool TriggerHelper::AudioInputPipeListener::CheckCallOnly() {
+bool TriggerHelper::AudioInputPipeListener::CheckCallOnly()
+{
     if (!helper_->mCallConcurrency_) {
         return false;
     }
     std::lock_guard<std::mutex> lock(helper_->playMutex_);
-    if(helper_->audioScene_ == AUDIO_SCENE_PHONE_CALL && helper_->hasStreamBesidesVoice_) {
+    if (helper_->audioScene_ == AUDIO_SCENE_PHONE_CALL && helper_->hasStreamBesidesVoice_) {
             INTELL_VOICE_LOG_INFO("voice and out stream, close wakeup");
             return true;
     }
@@ -1012,7 +1004,7 @@ bool TriggerHelper::AudioInputPipeListener::CheckInWhitelist(const std::string &
 
     auto bundleIter = helper_->concurrentWhitelist_.find(bundleName);
     if (bundleIter != helper_->concurrentWhitelist_.end()) {
-        if(bundleIter->second.find(streamInfo.source_) != bundleIter->second.end()) {
+        if (bundleIter->second.find(streamInfo.source_) != bundleIter->second.end()) {
             return true;
         }
     }
@@ -1027,7 +1019,7 @@ bool TriggerHelper::AudioInputPipeListener::CheckSourceWhisperEnable(const Captu
         streamInfo.source_ == SOURCE_TYPE_ULTRASONIC) {
         return true;
     }
- 
+
     if (helper_->mCameraConcurrency_ &&
         streamInfo.source_ == SOURCE_TYPE_UNPROCESSED && streamInfo.mixWithWakeUp_) {
         return true;
@@ -1061,12 +1053,12 @@ bool TriggerHelper::AudioInputPipeListener::CheckVoipOnly(const CapturerStreamIn
         return false;
     }
     std::lock_guard<std::mutex> lock(helper_->playMutex_);
-    if (streamInfo.state_ == CAPTURER_RUNNING && streamInfo.source_ == SOURCE_TYPE_VOICE_COMMUNICATION && 
+    if (streamInfo.state_ == CAPTURER_RUNNING && streamInfo.source_ == SOURCE_TYPE_VOICE_COMMUNICATION &&
         helper_->hasStreamBesidesVoip_) {
         INTELL_VOICE_LOG_INFO("voip and out stream, close wakeup");
         return true;
     }
-    
+
     return false;
 }
 
@@ -1077,7 +1069,7 @@ void TriggerHelper::AudioInputPipeListener::GetConcurrentState(bool &isConcurren
         isConcurrent = false;
         return;
     }
-    if(CheckCallOnly()) {
+    if (CheckCallOnly()) {
         isConcurrent = false;
         return;
     }
@@ -1123,15 +1115,14 @@ void TriggerHelper::AudioInputPipeListener::GetConcurrentState(bool &isConcurren
     isConcurrent = true;
 }
 
-bool TriggerHelper::AudioInputPipeListener::GetWhisperEnable(std::map<uint32_t, 
+bool TriggerHelper::AudioInputPipeListener::GetWhisperEnable(std::map<uint32_t,
     std::map<uint32_t, CapturerStreamInfo>>& inputPipeStateMap)
 {
     for (const auto &info : inputPipeStateMap) {
         for (const auto &stream : info.second) {
             const CapturerStreamInfo &streamInfo = stream.second;
             std::string bundleName = helper_->GetBundleName(streamInfo.uid_);
-
-            if(CheckInWhitelist(bundleName, streamInfo)) {;
+            if (CheckInWhitelist(bundleName, streamInfo)) {
                 continue;
             }
             if (CheckSourceWhisperEnable(streamInfo)) {
@@ -1144,7 +1135,7 @@ bool TriggerHelper::AudioInputPipeListener::GetWhisperEnable(std::map<uint32_t,
 }
 
 void TriggerHelper::AudioInputPipeListener::GetPipeInfo(
-    std::map<uint32_t, std::map<uint32_t, CapturerStreamInfo>>& inputPipeinfo) 
+    std::map<uint32_t, std::map<uint32_t, CapturerStreamInfo>>& inputPipeinfo)
 {
     auto audioEngineManager = DelayedSingleton<AudioEngineClientManager>::GetInstance();
     if (audioEngineManager == nullptr) {
@@ -1153,21 +1144,21 @@ void TriggerHelper::AudioInputPipeListener::GetPipeInfo(
     }
     std::vector<std::shared_ptr<AudioInputPipeInfo>> inputPipeInfoVec;
     auto ret = audioEngineManager->GetCurrentInputPipeChangeInfos(inputPipeInfoVec);
-    if(ret != 0) {
+    if (ret != 0) {
         INTELL_VOICE_LOG_WARN("Get pipeinfos fail");
         return;
     }
-    if(inputPipeInfoVec.empty()) {
+    if (inputPipeInfoVec.empty()) {
         INTELL_VOICE_LOG_WARN("no input pipeinfo");
     }
-    for(auto& pipeinfo : inputPipeInfoVec) {
-        if(pipeinfo == nullptr) {
+    for (auto& pipeinfo : inputPipeInfoVec) {
+        if (pipeinfo == nullptr) {
             INTELL_VOICE_LOG_WARN("null pipeinfo");
             continue;
         }
         auto streams = pipeinfo->GetStreams();
         auto flag = pipeinfo->GetRouteFlag();
-        if(pipeinfo->GetAdapter()!=HDI_ADAPTER_TYPE_PRIMARY ||
+        if (pipeinfo->GetAdapter()!=HDI_ADAPTER_TYPE_PRIMARY ||
             flag == AUDIO_FLAG_NONE || flag == AUDIO_INPUT_FLAG_OFFLOAD || flag == AUDIO_INPUT_FLAG_WAKEUP) {
             INTELL_VOICE_LOG_INFO("invalid capture");
             continue;
@@ -1184,7 +1175,7 @@ void TriggerHelper::AudioInputPipeListener::OnInputPipeChange(
         return;
     }
     std::lock_guard<std::mutex> lock(helper_->mutex_);
-    if(helper_->mFirstProc) {
+    if (helper_->mFirstProc) {
         helper_->SetParameterForInputPipe("concurrent_capture", "stop");
         helper_->mFirstProc = false;
     }
@@ -1193,22 +1184,23 @@ void TriggerHelper::AudioInputPipeListener::OnInputPipeChange(
     bool isWhitelistWhisperEnbale = true;
     bool isConcurrent = true;
     bool isSourceRunning = false;
-    if(helper_->mCallConcurrency_ && helper_->audioScene_ == AUDIO_SCENE_PHONE_CALL) {
+    if (helper_->mCallConcurrency_ && helper_->audioScene_ == AUDIO_SCENE_PHONE_CALL) {
         isSourceRunning = true;
     }
     for (auto& pipeState : inputPipeinfo) {
         INTELL_VOICE_LOG_INFO("flag: 0x%{public}x", pipeState.first);
-        for(auto& stream : pipeState.second) {
-            INTELL_VOICE_LOG_INFO("stmID: %{public}d, Type: %{public}d, stat: %{public}d, uid: %{public}u, m: %{public}d, mw:%{public}d",
-            stream.first, stream.second.source_, stream.second.state_, 
-            stream.second.uid_, stream.second.mute_, stream.second.mixWithWakeUp_);
+        for (auto& stream : pipeState.second) {
+            INTELL_VOICE_LOG_INFO("stmID: %{public}d, Type: %{public}d, stat: %{public}d, "
+                "uid: %{public}u, m: %{public}d, mw:%{public}d",
+                stream.first, stream.second.source_, stream.second.state_,
+                stream.second.uid_, stream.second.mute_, stream.second.mixWithWakeUp_);
                 if (stream.second.state_ == CAPTURER_RUNNING) {
                     isSourceRunning = true;
                 }
             }
     }
     GetConcurrentState(isConcurrent, inputPipeinfo);
-    if(helper_->mExtensionConcurrency_) {
+    if (helper_->mExtensionConcurrency_) {
         isWhitelistWhisperEnbale = GetWhisperEnable(inputPipeinfo);
     }
     INTELL_VOICE_LOG_DEBUG("old state: %{public}d %{public}d  new state: %{public}d %{public}d",
@@ -1216,7 +1208,7 @@ void TriggerHelper::AudioInputPipeListener::OnInputPipeChange(
                           isSourceRunning);
     int oldState = stateToInt(helper_->audioConcurrentCapture_, helper_->audioCaptureActive_);
     int newState = stateToInt(isConcurrent, isSourceRunning);
-    if((isConcurrent == helper_->audioConcurrentCapture_) && (isSourceRunning == helper_->audioCaptureActive_) &&
+    if ((isConcurrent == helper_->audioConcurrentCapture_) && (isSourceRunning == helper_->audioCaptureActive_) &&
         (!helper_->mExtensionConcurrency_ || (isWhitelistWhisperEnbale == helper_->whitelistWhisperEnbale_))) {
         INTELL_VOICE_LOG_DEBUG("same state no change");
         return;
@@ -1224,12 +1216,18 @@ void TriggerHelper::AudioInputPipeListener::OnInputPipeChange(
     helper_->audioConcurrentCapture_ = isConcurrent;
     helper_->audioCaptureActive_ = isSourceRunning;
     helper_->whitelistWhisperEnbale_ = isWhitelistWhisperEnbale;
-    for (auto modelIter : helper_->modelDataMap_) {
-        if(modelIter.second == nullptr) {
-            INTELL_VOICE_LOG_ERROR("model data is nullpter uuid%{public}d", modelIter.first);
-            continue;
+
+    if (helper_->modelDataMap_.empty()) {
+        INTELL_VOICE_LOG_INFO("model data map is empty, execute state transition without model");
+        ExecuteStateTransition(oldState, newState, nullptr);
+    } else {
+        for (auto modelIter : helper_->modelDataMap_) {
+            if (modelIter.second == nullptr) {
+                INTELL_VOICE_LOG_ERROR("model data is nullpter uuid%{public}d", modelIter.first);
+                continue;
+            }
+            ExecuteStateTransition(oldState, newState, modelIter.second);
         }
-        ExecuteStateTransition(oldState, newState, modelIter.second);
     }
 }
 #else
@@ -1301,11 +1299,11 @@ void TriggerHelper::AudioRendererStateChangeCallbackImpl::OnRendererStateChange(
             bool isPlaying = false;
             if (info->rendererState == AudioStandard::RENDERER_RUNNING) {
                 isPlaying = true;
-                if(info->rendererInfo.streamUsage != AudioStandard::STREAM_USAGE_VOICE_COMMUNICATION
+                if (info->rendererInfo.streamUsage != AudioStandard::STREAM_USAGE_VOICE_COMMUNICATION
                 && info->rendererInfo.streamUsage != AudioStandard::STREAM_USAGE_VIDEO_COMMUNICATION) {
                     helper_->hasStreamBesidesVoip_ = true;
                 }
-                if(info->rendererInfo.streamUsage != AudioStandard::STREAM_USAGE_VOICE_MODEM_COMMUNICATION) {
+                if (info->rendererInfo.streamUsage != AudioStandard::STREAM_USAGE_VOICE_MODEM_COMMUNICATION) {
                     helper_->hasStreamBesidesVoice_ = true;
                 }
             }

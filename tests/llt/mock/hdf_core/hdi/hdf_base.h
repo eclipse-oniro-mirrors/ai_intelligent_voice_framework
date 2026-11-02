@@ -35,19 +35,6 @@
 #define HDI_MAP_MAX_SIZE 102400000
 #endif
 
-#define HDF_CHECK_VALUE_RETURN(lv, compare, rv, ret) do { \
-    if ((lv) compare (rv)) { \
-        return ret; \
-    } \
-} while (false)
-
-#define HDF_CHECK_VALUE_RET_GOTO(lv, compare, rv, ret, value, table) do { \
-    if ((lv) compare (rv)) { \
-        ret = value; \
-        goto table; /* NOLINT */ \
-    } \
-} while (false)
-
 #define DECLARE_HDI_DESCRIPTOR(descriptor) \
     __attribute__((visibility("hidden"))) \
     const static inline std::u16string metaDescriptor_ = {descriptor}; \

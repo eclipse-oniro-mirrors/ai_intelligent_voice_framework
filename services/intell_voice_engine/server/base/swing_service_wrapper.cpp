@@ -94,11 +94,10 @@ int32_t SwingServiceWrapper::SubscribeSwingEvent(std::string swingEventType, std
         return -1;
     }
     int32_t ret = swingServicePriv_.subscribeSwingEvent(swingEventType.c_str(), eventParams.c_str());
-
     if (ret != 0) {
         INTELL_VOICE_LOG_ERROR("load tiny model failed: %{public}d", ret);
     }
-    return ret; 
+    return ret;
 }
 
 int32_t SwingServiceWrapper::UnSubscribeSwingEvent(std::string swingEventType, std::string eventParams)

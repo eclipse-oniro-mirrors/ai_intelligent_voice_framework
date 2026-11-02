@@ -15,12 +15,12 @@
 #ifndef ENGINE_DEVICE_MANAGER_H
 #define ENGINE_DEVICE_MANAGER_H
  
+#include <memory>
 #include <mutex>
 #include <unordered_map>
-#include "i_intell_voice_service.h"
 #include "audio_policy_manager.h"
 #include "i_device_wakeup.h"
-#include <memory>
+#include "i_intell_voice_service.h"
  
 namespace OHOS {
 namespace IntellVoiceEngine {

@@ -91,6 +91,15 @@ taihe_shared_library("intellVoice_taihe") {
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    cfi_vcall_icall_only = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
 }
 
 generate_static_abc("intelligent_voice_framework_taihe_abc") {

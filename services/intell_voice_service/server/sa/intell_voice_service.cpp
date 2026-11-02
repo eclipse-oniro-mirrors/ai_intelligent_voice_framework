@@ -38,7 +38,10 @@ using namespace OHOS::IntellVoiceUtils;
 
 namespace OHOS {
 namespace IntellVoiceEngine {
-#define BETWEEN(val, min, max)   (((val) >= (min)) && ((val) <= (max)))
+inline bool Between(IntellVoiceEngineType val, IntellVoiceEngineType min, IntellVoiceEngineType max)
+{
+    return (val >= min) && (val <= max);
+}
 
 REGISTER_SYSTEM_ABILITY_BY_ID(IntellVoiceService, INTELL_VOICE_SERVICE_ID, true);
 const std::string OHOS_PERMISSION_INTELL_VOICE = "ohos.permission.MANAGE_INTELLIGENT_VOICE";
@@ -356,8 +359,8 @@ bool IntellVoiceService::RegisterDeathRecipient(IntellVoiceEngineType type, cons
         return false;
     }
 
-    if (!(BETWEEN(type, INTELL_VOICE_ENROLL, INTELL_VOICE_WAKEUP)) &&
-        !(BETWEEN(type, INTELL_VOICE_HEADSET_WAKEUP, INTELL_VOICE_HEADSET_WAKEUP))) {
+    if (!(Between(type, INTELL_VOICE_ENROLL, INTELL_VOICE_WAKEUP)) &&
+        !(Between(type, INTELL_VOICE_HEADSET_WAKEUP, INTELL_VOICE_HEADSET_WAKEUP))) {
         INTELL_VOICE_LOG_ERROR("invalid type:%{public}d", type);
         return false;
     }
@@ -372,8 +375,8 @@ bool IntellVoiceService::DeregisterDeathRecipient(IntellVoiceEngineType type)
         return false;
     }
 
-    if (!(BETWEEN(type, INTELL_VOICE_ENROLL, INTELL_VOICE_WAKEUP)) &&
-        !(BETWEEN(type, INTELL_VOICE_HEADSET_WAKEUP, INTELL_VOICE_HEADSET_WAKEUP))) {
+    if (!(Between(type, INTELL_VOICE_ENROLL, INTELL_VOICE_WAKEUP)) &&
+        !(Between(type, INTELL_VOICE_HEADSET_WAKEUP, INTELL_VOICE_HEADSET_WAKEUP))) {
         INTELL_VOICE_LOG_ERROR("invalid type:%{public}d", type);
         return false;
     }

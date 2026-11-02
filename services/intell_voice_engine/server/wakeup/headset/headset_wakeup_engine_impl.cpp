@@ -34,9 +34,9 @@ using OHOS::HDI::DeviceManager::V1_0::IDeviceManager;
 
 namespace OHOS {
 namespace IntellVoiceEngine {
-static constexpr int64_t RECOGNIZING_TIMEOUT_US = 10 * 1000 * 1000; //10s
-static constexpr int64_t RECOGNIZE_COMPLETE_TIMEOUT_US = 2 * 1000 * 1000; //2s
-static constexpr int64_t READ_CAPTURER_TIMEOUT_US = 10 * 1000 * 1000; //10s
+static constexpr int64_t RECOGNIZING_TIMEOUT_US = 10 * 1000 * 1000; // 10s
+static constexpr int64_t RECOGNIZE_COMPLETE_TIMEOUT_US = 2 * 1000 * 1000; // 2s
+static constexpr int64_t READ_CAPTURER_TIMEOUT_US = 10 * 1000 * 1000; // 10s
 static constexpr uint32_t MAX_HEADSET_TASK_NUM = 200;
 static const std::string HEADSET_THREAD_NAME = "HeadsetThread";
 
@@ -138,7 +138,7 @@ bool HeadsetWakeupEngineImpl::Create(std::shared_ptr<StateInfoListener> stateLis
     HeadsetHostManager::GetInstance().RegisterEngineHDIDeathRecipient();
     return Init();
 }
- 
+
 bool HeadsetWakeupEngineImpl::Destroy()
 {
     StateMsg msg(RELEASE);
@@ -154,7 +154,7 @@ bool HeadsetWakeupEngineImpl::Destroy()
     devmgr->UnloadDevice(HEADSET_SERVICE_NAME);
     return true;
 }
- 
+
 void HeadsetWakeupEngineImpl::OnTriggerDetected(int32_t /* uuid */,
     const std::shared_ptr<WakeupDeviceDetail>& wakeupDevice, const EventDetail &event)
 {
@@ -386,7 +386,7 @@ void HeadsetWakeupEngineImpl::StopAudioSource()
     readThread_.join();
     HeadsetWakeupWrapper::GetInstance().StopReadingStream();
     WakeupSourceProcess::Release();
-    if(!mCloudReporter) {
+    if (!mCloudReporter) {
         return;
     }
     if (mCloudReporter->CreateReportDir()) {

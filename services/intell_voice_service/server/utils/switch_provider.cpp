@@ -124,7 +124,6 @@ void SwitchProvider::QueryAndLogReason()
         pred.EqualTo("KEYWORD", key);
         auto uri = AssembleUri(key);
         auto resultSet = helper_->Query(uri, pred, columns);
-        
         if (resultSet == nullptr) {
             INTELL_VOICE_LOG_WARN("Failed to query reason for %{public}s key", logName.c_str());
             continue;

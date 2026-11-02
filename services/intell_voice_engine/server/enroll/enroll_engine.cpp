@@ -308,7 +308,8 @@ bool EnrollEngine::SetParameterInner(const std::string &keyValueList)
     return false;
 }
 
-std::string EnrollEngine::GetTSEParameter() {
+std::string EnrollEngine::GetTSEParameter()
+{
     if (tseResult_ == 0) {
         return "1";
     } else {
@@ -373,7 +374,8 @@ bool EnrollEngine::StartAudioSource()
         if ((adapter_ != nullptr) && (!isEnd)) {
             std::vector<uint8_t> audioBuff(&buffer[0], &buffer[size]);
             adapter_->WriteAudio(audioBuff);
-        }}, [&] () {
+        }
+    }, [&] () {
             INTELL_VOICE_LOG_INFO("end of pcm");
             if (adapter_ != nullptr) {
                 adapter_->SetParameter("end_of_pcm=true");
@@ -383,10 +385,11 @@ bool EnrollEngine::StartAudioSource()
         INTELL_VOICE_LOG_ERROR("create listener failed");
         return false;
     }
-    if (isWithCmdScenario_)
+    if (isWithCmdScenario_) {
         bufferCnt = WITHCMD_INTERVAL;
-    else
+    } else {
         bufferCnt = INTERVAL;
+    }
     audioSource_ = std::make_unique<AudioSource>(MIN_BUFFER_SIZE, bufferCnt, std::move(listener),
         capturerOptions_);
     if (audioSource_ == nullptr) {

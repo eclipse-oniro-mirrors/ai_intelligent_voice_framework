@@ -25,6 +25,11 @@ namespace OHOS {
 namespace Security {
 namespace Huks {
 
+namespace {
+// Mock random fills at most this many bytes (typical AES-128 key / digest size)
+constexpr size_t MOCK_RANDOM_FILL_MAX_BYTES = 16;
+}
+
 struct HksBlob {
     uint32_t size;
     uint8_t* data;
@@ -135,7 +140,7 @@ inline int32_t HksGenerateRandom(HksParamSet* paramSet, HksBlob* random)
 {
     (void)paramSet;
     if (random != nullptr && random->data != nullptr) {
-        for (size_t i = 0; i < random->size && i < 16; i++) {
+        for (size_t i = 0; i < random->size && i < MOCK_RANDOM_FILL_MAX_BYTES; i++) {
             random->data[i] = static_cast<uint8_t>(i);
         }
     }

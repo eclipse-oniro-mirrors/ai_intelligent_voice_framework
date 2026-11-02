@@ -142,7 +142,7 @@ struct AudioStreamInfo {
     int32_t encoding = 0;
     int32_t format = 0;
     uint32_t channels = 0;
-    int32_t samplingRate = 16000;
+    int32_t samplingRate = SAMPLE_RATE_16000;
 };
 
 struct AudioCapturerInfo {

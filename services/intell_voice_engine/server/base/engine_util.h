@@ -15,16 +15,16 @@
 #ifndef ENGINE_UTIL_H
 #define ENGINE_UTIL_H
 #include <memory>
+#include <ashmem.h>
+#include <map>
 #include <mutex>
 #include <string>
-#include <map>
 #include <vector>
-#include <ashmem.h>
+#include "audio_system_manager.h"
 #include "i_adapter_host_manager.h"
-#include <i_intell_voice_engine_callback.h>
+#include "i_intell_voice_engine_callback.h"
 #include "v1_0/iintell_voice_engine_adapter.h"
 #include "v1_0/iintell_voice_engine_callback.h"
-#include "audio_system_manager.h"
 
 namespace OHOS {
 namespace IntellVoiceEngine {

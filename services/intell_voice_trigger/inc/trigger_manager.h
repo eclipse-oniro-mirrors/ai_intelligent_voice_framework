@@ -64,7 +64,7 @@ private:
 #ifdef SUPPORT_RECORD_WAKEUP_CONCURRENT
     void AttachAudioCapturerEventListener();
     void DetachAudioCapturerEventListener();
-#else 
+#else
     void AttachAudioCaptureListener();
     void DetachAudioCaptureListener();
 #endif

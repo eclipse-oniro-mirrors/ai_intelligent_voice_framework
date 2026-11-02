@@ -44,8 +44,8 @@ OnlyFirstEngineManager::~OnlyFirstEngineManager()
 
 bool OnlyFirstEngineManager::IsEngineExist(IntellVoiceEngineType type)
 {
-    if(type == INTELL_VOICE_WAKEUP) {
-        if(wakeupEngine_ != nullptr) {
+    if (type == INTELL_VOICE_WAKEUP) {
+        if (wakeupEngine_ != nullptr) {
             return true;
         }
     }
@@ -74,7 +74,7 @@ bool OnlyFirstEngineManager::RegisterProxyDeathRecipient(IntellVoiceEngineType t
         return false;
     }
 
-    if(proxyDeathRecipient_ != nullptr) {
+    if (proxyDeathRecipient_ != nullptr) {
         INTELL_VOICE_LOG_WARN("death recipient is not nullptr, type:%{public}d", type);
         return false;
     }
@@ -84,7 +84,6 @@ bool OnlyFirstEngineManager::RegisterProxyDeathRecipient(IntellVoiceEngineType t
         INTELL_VOICE_LOG_INFO("receive wakeup proxy death recipient, clear wakeup engine callback");
         EngineCallbackMessage::CallFunc(HANDLE_CLEAR_WAKEUP_ENGINE_CB);
     });
-    
     if (proxyDeathRecipient_ == nullptr) {
         INTELL_VOICE_LOG_ERROR("create death recipient failed");
         return false;
@@ -205,7 +204,7 @@ int32_t OnlyFirstEngineManager::ReleaseEngineInner(IntellVoiceEngineType type)
         return 0;
     }
 
-    //hap only releases Napi, and does not release sa resources
+    // hap only releases Napi, and does not release sa resources
     OHOS::IntellVoiceUtils::MemoryGuard memoryGuard;
     if (wakeupEngine_ != nullptr) {
         wakeupEngine_->Detach();

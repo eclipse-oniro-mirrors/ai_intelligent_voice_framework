@@ -139,8 +139,9 @@ void TriggerManager::DetachTelephonyObserver()
 }
 
 #ifdef SUPPORT_RECORD_WAKEUP_CONCURRENT
-void TriggerManager::ClearConcurrentControlList(bool isWhiteList, bool isBlackList) {
-    if(service_ == nullptr) {
+void TriggerManager::ClearConcurrentControlList(bool isWhiteList, bool isBlackList)
+{
+    if (service_ == nullptr) {
         INTELL_VOICE_LOG_ERROR("service_ is nullptr");
         return;
     }

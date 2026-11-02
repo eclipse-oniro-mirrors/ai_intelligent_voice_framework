@@ -23,6 +23,7 @@ namespace OHOS {
 namespace IntellVoiceEngine {
 static constexpr uint32_t WAIT_TIME = 1000;  // 1000ms
 static constexpr uint32_t CHANNEL_CNT_1 = 1;
+static constexpr uint32_t CHANNEL_CNT_2 = 2;
 static constexpr uint32_t CHANNEL_CNT_4 = 4;
 static constexpr uint32_t MAX_CHANNEL_CNT = 4;
 static constexpr uint32_t FRAME_CNT = 100;
@@ -156,7 +157,7 @@ void WakeupSourceProcess::ReadBufferedData(std::vector<uint8_t> &channelData, ui
         INTELL_VOICE_LOG_INFO("readed channel 0 and : %{public}d", channelId);
     } else {
         AddMultiFrame(channelData, channelId, frameLen);
-        channelData.reserve(channelData.size() * 2);
+        channelData.reserve(channelData.size() * CHANNEL_CNT_2);
         channelData.insert(channelData.end(), channelData.begin(), channelData.end());
     }
     INTELL_VOICE_LOG_INFO("readed buffered length: %{public}d", frameLen);

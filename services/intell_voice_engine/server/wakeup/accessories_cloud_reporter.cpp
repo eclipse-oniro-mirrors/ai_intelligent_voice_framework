@@ -40,7 +40,6 @@ const string XYXY_UNICODE = "\u5c0f\u827a\u5c0f\u827a";
 const string INTELL_VOICE_DEFAULT_DATA_PATH = "/data/service/el0/intell_voice/report";
 const uint32_t WAKEUP_PCM_SAVE_NUM_MAX = 102;
 const uint32_t WAKEUP_PCM_REPORT_NUM_MAX = 103;
-#define UNUSED_PARAMETER(x) (void)(x)
 
 void AccessoriesCloudReporter::SetPath()
 {

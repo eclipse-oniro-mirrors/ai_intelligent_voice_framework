@@ -145,7 +145,7 @@ void TriggerService::DetachTelephonyObserver()
 #ifdef SUPPORT_RECORD_WAKEUP_CONCURRENT
 void TriggerService::ClearConcurrentControlList(bool isWhiteList, bool isBlackList)
 {
-    if(triggerHelper_ == nullptr) {
+    if (triggerHelper_ == nullptr) {
         INTELL_VOICE_LOG_ERROR("trigger helper is nullptr");
         return;
     }

@@ -34,6 +34,10 @@ class IIntellVoiceEngineAdapter : public OHOS::HDI::IntelligentVoice::Engine::V1
 public:
     DECLARE_HDI_DESCRIPTOR(u"ohos.hdi.intelligent_voice.engine.v1_3.IIntellVoiceEngineAdapter")
 
+    // HDI interface version reported by GetVersion
+    static constexpr uint32_t INTERFACE_MAJOR_VERSION = 1;
+    static constexpr uint32_t INTERFACE_MINOR_VERSION = 3;
+
     virtual ~IIntellVoiceEngineAdapter() = default;
 
     static sptr<OHOS::HDI::IntelligentVoice::Engine::V1_3::IIntellVoiceEngineAdapter> CastFrom(
@@ -41,8 +45,8 @@ public:
 
     int32_t GetVersion(uint32_t& majorVer, uint32_t& minorVer) override
     {
-        majorVer = 1;
-        minorVer = 3;
+        majorVer = INTERFACE_MAJOR_VERSION;
+        minorVer = INTERFACE_MINOR_VERSION;
         return HDF_SUCCESS;
     }
 

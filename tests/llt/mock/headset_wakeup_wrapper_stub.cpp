@@ -30,6 +30,13 @@
 namespace OHOS {
 namespace IntellVoiceEngine {
 
+namespace {
+// Fake audio frame size (bytes) returned by stub ReadHeadsetStream
+constexpr int32_t STUB_AUDIO_FRAME_SIZE = 640;
+// Return value indicating data is ready but no awake word detected
+constexpr int32_t STUB_STREAM_DATA_READY = 1;
+} // namespace
+
 HeadsetWakeupWrapper::HeadsetWakeupWrapper()
 {
     INTELL_VOICE_LOG_INFO("enter (stub)");
@@ -45,9 +52,9 @@ int32_t HeadsetWakeupWrapper::ReadHeadsetStream(std::vector<uint8_t> &audioStrea
     INTELL_VOICE_LOG_INFO("enter (stub)");
     std::lock_guard<std::mutex> lock(mutex_);
     // In test environment, return fake audio data so WakeupSourceProcess can read it
-    audioStream.resize(640, 0);
+    audioStream.resize(STUB_AUDIO_FRAME_SIZE, 0);
     hasAwakeWord = false;
-    return 1;
+    return STUB_STREAM_DATA_READY;
 }
 
 int32_t HeadsetWakeupWrapper::NotifyVerifyResult(bool result)

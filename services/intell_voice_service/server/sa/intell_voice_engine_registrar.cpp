@@ -13,9 +13,10 @@
  * limitations under the License.
  */
 #include <any>
-#include "intell_voice_engine_registrar.h"
+
 #include "engine_callback_message.h"
 #include "intell_voice_log.h"
+#include "intell_voice_engine_registrar.h"
 
 #define LOG_TAG "IntellVoiceEngineRegistrar"
 

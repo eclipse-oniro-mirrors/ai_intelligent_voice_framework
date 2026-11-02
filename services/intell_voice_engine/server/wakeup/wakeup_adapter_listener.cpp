@@ -81,7 +81,7 @@ void WakeupAdapterListener::Notify(const IntellVoiceEngineCallBackEvent &event)
     if (cb_ == nullptr) {
         INTELL_VOICE_LOG_WARN("cb_ is nullptr");
         WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_RECOGNIZED,
-            OHOS::IntellVoiceUtils::WAKEUP_RESULT_FAIL, OHOS::IntellVoiceUtils::SA_CALLBACK_ERROR); 
+            OHOS::IntellVoiceUtils::WAKEUP_RESULT_FAIL, OHOS::IntellVoiceUtils::SA_CALLBACK_ERROR);
         BackupCallBackEvent(event);
         return;
     }

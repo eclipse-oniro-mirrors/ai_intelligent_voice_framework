@@ -22,7 +22,7 @@
 #define LOG_TAG "IntellVoiceServiceProxy"
 namespace OHOS {
 namespace IntellVoiceEngine {
-#define CROSS_PROCESS_BUF_SIZE_LIMIT (256 *1024)
+static constexpr uint32_t CROSS_PROCESS_BUF_SIZE_LIMIT = 256 * 1024;
 static constexpr uint32_t CLONE_FILES_NUM_MAX = 100;
 
 int32_t IntellVoiceServiceProxy::CreateIntellVoiceEngine(IntellVoiceEngineType type, sptr<IIntellVoiceEngine> &inst)
@@ -273,13 +273,13 @@ int32_t IntellVoiceServiceProxy::ClearUserData()
     }
     return reply.ReadInt32();
 }
- 
+
 int32_t IntellVoiceServiceProxy::RegisterDeviceWakeupInfo(const std::string &macAddress, const WakeupDeviceInfo &info)
 {
     MessageParcel data;
     MessageParcel reply;
     MessageOption option;
- 
+
     data.WriteInterfaceToken(IIntellVoiceService::GetDescriptor());
     data.WriteString(macAddress);
     data.WriteUint32(info.type);
@@ -288,7 +288,7 @@ int32_t IntellVoiceServiceProxy::RegisterDeviceWakeupInfo(const std::string &mac
     auto stub = sptr<IntellVoiceDeathRecipientStub>(new (std::nothrow) IntellVoiceDeathRecipientStub());
     if (stub == nullptr) {
         INTELL_VOICE_LOG_ERROR("DeathRecipient construct failed");
-        return -1; 
+        return -1;
     }
     data.WriteRemoteObject(stub);
     int32_t error = Remote()->SendRequest(HDI_INTELL_VOICE_SERVICE_REGISTER_DEVICE, data, reply, option);
@@ -298,7 +298,7 @@ int32_t IntellVoiceServiceProxy::RegisterDeviceWakeupInfo(const std::string &mac
     }
     return reply.ReadInt32();
 }
- 
+
 int32_t IntellVoiceServiceProxy::DeregisterDeviceWakeupInfo(const std::string &macAddress)
 {
     MessageParcel data;

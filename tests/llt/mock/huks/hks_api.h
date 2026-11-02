@@ -25,6 +25,13 @@
 #define HKS_SUCCESS 0
 #define HKS_FAILURE (-1)
 
+// Mock random fills at most this many bytes (typical AES-128 key / digest size)
+static constexpr size_t HKS_MOCK_RANDOM_FILL_MAX_BYTES = 16;
+// Mock HKS pack info version reported by HksGetPackInfo
+static constexpr uint32_t HKS_MOCK_PACK_MAJOR_VERSION = 3;
+static constexpr uint32_t HKS_MOCK_PACK_MINOR_VERSION = 0;
+static constexpr uint32_t HKS_MOCK_PACK_PATCH_VERSION = 0;
+
 #define HKS_TAG_ALGORITHM 1
 #define HKS_TAG_PURPOSE 2
 #define HKS_TAG_KEY_SIZE 3
@@ -132,9 +139,9 @@ inline int HksDecrypt(const HksBlob *keyAlias, const HksParam *param, const HksB
 inline int HksGetPackInfo(HksPackInfo *packInfo)
 {
     if (packInfo != nullptr) {
-        packInfo->majorVersion = 3;
-        packInfo->minorVersion = 0;
-        packInfo->patchVersion = 0;
+        packInfo->majorVersion = HKS_MOCK_PACK_MAJOR_VERSION;
+        packInfo->minorVersion = HKS_MOCK_PACK_MINOR_VERSION;
+        packInfo->patchVersion = HKS_MOCK_PACK_PATCH_VERSION;
     }
     return HKS_SUCCESS;
 }
@@ -265,7 +272,7 @@ inline int HksGenerateRandom(HksParamSet* paramSet, HksBlob* random)
 {
     (void)paramSet;
     if (random != nullptr && random->data != nullptr) {
-        for (size_t i = 0; i < random->size && i < 16; i++) {
+        for (size_t i = 0; i < random->size && i < HKS_MOCK_RANDOM_FILL_MAX_BYTES; i++) {
             random->data[i] = static_cast<uint8_t>(i);
         }
     }

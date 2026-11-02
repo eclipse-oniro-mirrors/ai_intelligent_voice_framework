@@ -64,7 +64,7 @@ enum class concurrencyControlList {
     WHITELIST = 0,
     BLACKLIST,
 };
-#else 
+#else
 using OHOS::AudioStandard::AudioCapturerSourceCallback;
 #endif
 using OHOS::AudioStandard::AudioManagerAudioSceneChangedCallback;
@@ -123,9 +123,8 @@ private:
 
 class TriggerHelper : public IIntellVoiceTriggerConnectorCallback, public std::enable_shared_from_this<TriggerHelper> {
 public:
-    ~TriggerHelper();
-
     static std::shared_ptr<TriggerHelper> Create();
+    ~TriggerHelper();
 
     int32_t StartGenericRecognition(int32_t uuid, std::shared_ptr<GenericTriggerModel> model,
         std::shared_ptr<IIntellVoiceTriggerRecognitionCallback> callback);
@@ -133,7 +132,7 @@ public:
     void UnloadGenericTriggerModel(int32_t uuid);
     int32_t SetParameter(const std::string &key, const std::string &value);
     int32_t SetParameterForInputPipe(const std::string &key, const std::string &value);
-    
+
     std::string GetParameter(const std::string &key);
     void AttachAudioRendererEventListener();
     void DetachAudioRendererEventListener();
@@ -245,8 +244,7 @@ public:
     }
     void OnFoldStatusChanged(FoldStatus foldStatus) override;
 
-    public:
-        std::shared_ptr<TriggerHelper> helper_ = nullptr;
+    std::shared_ptr<TriggerHelper> helper_ = nullptr;
 };
 private:
     sptr<OHOS::Rosen::DisplayManagerLite::IFoldStatusListener> foldStatusListener_;
@@ -294,15 +292,19 @@ private:
         void GetPipeInfo(std::map<uint32_t, std::map<uint32_t, CapturerStreamInfo>>& inputPipeinfo);
         bool CheckCallConflict();
         bool CheckCallOnly();
-        bool CheckBlacklistConflict(const std::string &bundleName, 
+        bool CheckBlacklistConflict(const std::string &bundleName,
             const CapturerStreamInfo &streamInfo);
         bool CheckInWhitelist(const std::string &bundleName, const CapturerStreamInfo &streamInfo);
         bool CheckSourceConcurrency(const CapturerStreamInfo &streamInfo);
         bool CheckVoipOnly(const CapturerStreamInfo &streamInfo);
         bool CheckSourceWhisperEnable(const CapturerStreamInfo &streamInfo);
         // two bool to one int
-        int stateToInt(bool concurrentState, bool sourceState) {
-            return (concurrentState ? 2 : 0) + (sourceState ? 1 : 0);
+        // state bit weights: concurrentState occupies the high bit, sourceState the low bit
+        static constexpr int STATE_BIT_CONCURRENT = 2;
+        static constexpr int STATE_BIT_SOURCE = 1;
+        int stateToInt(bool concurrentState, bool sourceState)
+        {
+            return (concurrentState ? STATE_BIT_CONCURRENT : 0) + (sourceState ? STATE_BIT_SOURCE : 0);
         }
         void ExecuteStateTransition(int oldState, int newState, const std::shared_ptr<TriggerModelData> &modelData);
         enum class captureMethod {
@@ -346,7 +348,7 @@ private:
         std::mutex mutex_;
         std::shared_ptr<TriggerHelper> helper_ = nullptr;
     };
-#else 
+#else
     class AudioCapturerSourceChangeCallback : public AudioCapturerSourceCallback {
     public:
         explicit AudioCapturerSourceChangeCallback(const std::shared_ptr<TriggerHelper> helper) : helper_(helper)
@@ -441,9 +443,9 @@ private:
     bool mCameraConcurrency_ = false;
     std::set<SourceType> concurrentTypeSet_{};
     std::set<SourceType> ExtensionConcurrentTypeSet_{
-        SourceType::SOURCE_TYPE_MIC, 
+        SourceType::SOURCE_TYPE_MIC,
         SourceType::SOURCE_TYPE_VOICE_RECOGNITION,
-        SourceType::SOURCE_TYPE_ULTRASONIC, 
+        SourceType::SOURCE_TYPE_ULTRASONIC,
         SourceType::SOURCE_TYPE_VOICE_TRANSCRIPTION,
         SourceType::SOURCE_TYPE_CAMCORDER,
         SourceType::SOURCE_TYPE_UNPROCESSED};

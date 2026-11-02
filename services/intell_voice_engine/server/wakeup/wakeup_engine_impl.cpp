@@ -52,18 +52,20 @@ static const std::string WAKEUP_TIMESTAMP = "wakeup_timestamp";
 static const std::string TIMESTAMP_SOURCE_START = "source_start";
 static const std::string TIMESTAMP_SOURCE_END = "source_end";
 static constexpr std::string_view DEFAULT_WAKEUP_PHRASE = "\xE5\xB0\x8F\xE8\x89\xBA\xE5\xB0\x8F\xE8\x89\xBA";
-static constexpr int64_t RECOGNIZING_TIMEOUT_US = 10 * 1000 * 1000; //10s
-static constexpr int64_t RECOGNIZE_COMPLETE_TIMEOUT_US = 2 * 1000 * 1000; //2s
-static constexpr int64_t READ_CAPTURER_TIMEOUT_US = 10 * 1000 * 1000; //10s
+static constexpr int64_t RECOGNIZING_TIMEOUT_US = 10 * 1000 * 1000; // 10s
+static constexpr int64_t RECOGNIZE_COMPLETE_TIMEOUT_US = 2 * 1000 * 1000; // 2s
+static constexpr int64_t READ_CAPTURER_TIMEOUT_US = 10 * 1000 * 1000; // 10s
 static constexpr uint32_t MAX_WAKEUP_TASK_NUM = 200;
 static const std::string WAKEUP_THREAD_NAME = "WakeupEngThread";
 static constexpr int64_t SEC_PER_DAY = 86400;
+static constexpr int64_t MS_PER_SEC = 1000;       // milliseconds per second
+static constexpr int64_t US_PER_MS = 1000;        // microseconds per millisecond
 
 WakeupEngineImpl::WakeupEngineImpl() : ModuleStates(State(IDLE), "WakeupEngineImpl", "WakeupThread"),
     TaskExecutor(WAKEUP_THREAD_NAME, MAX_WAKEUP_TASK_NUM), BaseWakeupEngineImpl()
 {
 }
- 
+
 bool WakeupEngineImpl::Init()
 {
     INTELL_VOICE_LOG_INFO("enter");
@@ -406,7 +408,7 @@ void WakeupEngineImpl::OnWakeupRecognition(int32_t result, const std::string &in
     event.result = static_cast<OHOS::HDI::IntelligentVoice::Engine::V1_0::IntellVoiceEngineErrors>(result);
     event.info = info;
     WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_RECOGNIZED,
-        OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END); 
+        OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END);
     StateMsg msg(RECOGNIZE_COMPLETE, reinterpret_cast<void *>(&event),
         sizeof(OHOS::HDI::IntelligentVoice::Engine::V1_0::IntellVoiceEngineCallBackEvent));
     Handle(msg);
@@ -417,9 +419,9 @@ std::string WakeupEngineImpl::SetTriggerParameter(const std::string &keyValueLis
     HistoryInfoMgr &historyInfoMgr = HistoryInfoMgr::GetInstance();
     std::map<std::string, std::string> kvpairs;
     IntellVoiceUtil::SplitStringToKVPair(keyValueList, kvpairs);
-    
+
     std::vector<std::string> processedKeys;
-    
+
     for (const auto &pair : kvpairs) {
         if (std::find(TRIGGER_PARAMS.begin(), TRIGGER_PARAMS.end(), pair.first) != TRIGGER_PARAMS.end()) {
             INTELL_VOICE_LOG_INFO("set trigger %{public}s:%{public}s", pair.first.c_str(), pair.second.c_str());
@@ -489,7 +491,7 @@ int32_t WakeupEngineImpl::HandleGetParam(const StateMsg &msg, State & /* nextSta
         }
         value->strParam = timestamp + EngineUtil::GetParameter(WAKEUP_TIMESTAMP);
         if (audioSourceStart_ != 0 && audioSourceEnd_ != 0) {
-            value->strParam += TIMESTAMP_SOURCE_START + ":" + std::to_string(audioSourceStart_) + ";" 
+            value->strParam += TIMESTAMP_SOURCE_START + ":" + std::to_string(audioSourceStart_) + ";"
                 + TIMESTAMP_SOURCE_END + ":" + std::to_string(audioSourceEnd_) + ";";
             audioSourceStart_ = 0;
             audioSourceEnd_ = 0;
@@ -631,12 +633,12 @@ int32_t WakeupEngineImpl::HandleStart(const StateMsg &msg, State &nextState)
     INTELL_VOICE_LOG_INFO("exit");
     nextState = State(RECOGNIZING);
     WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_HANDLE_DETECTED,
-        OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END); 
+        OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END);
     return 0;
 
 err:
     WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_HANDLE_DETECTED,
-        OHOS::IntellVoiceUtils::WAKEUP_RESULT_FAIL, errCode); 
+        OHOS::IntellVoiceUtils::WAKEUP_RESULT_FAIL, errCode);
     return -1;
 }
 
@@ -676,7 +678,7 @@ int32_t WakeupEngineImpl::HandleStartCapturer(const StateMsg &msg, State &nextSt
 {
     INTELL_VOICE_LOG_INFO("enter");
     WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_ONESHOT_START,
-        OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END); 
+        OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END);
     auto ret = IntellVoiceUtil::VerifySystemPermission(OHOS_MICROPHONE_PERMISSION);
     if (ret != INTELLIGENT_VOICE_SUCCESS) {
         return ret;
@@ -720,8 +722,8 @@ int32_t WakeupEngineImpl::HandleRead(const StateMsg &msg, State & /* nextState *
 int32_t WakeupEngineImpl::HandleStopCapturerTimeout(const StateMsg & msg, State &nextState,
     OHOS::IntellVoiceUtils::StageCode stageCode)
 {
-    WakeupTrack::reportWakeupTrack(stageCode, OHOS::IntellVoiceUtils::WAKEUP_RESULT_FAIL, 
-        OHOS::IntellVoiceUtils::SA_TIMEOUT_ERROR); 
+    WakeupTrack::reportWakeupTrack(stageCode, OHOS::IntellVoiceUtils::WAKEUP_RESULT_FAIL,
+        OHOS::IntellVoiceUtils::SA_TIMEOUT_ERROR);
     return HandleStopCapturer(msg, nextState);
 }
 
@@ -729,7 +731,7 @@ int32_t WakeupEngineImpl::HandleStopCapturer(const StateMsg & /* msg */, State &
 {
     INTELL_VOICE_LOG_INFO("enter");
     WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_ONESHOT_END,
-        OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END); 
+        OHOS::IntellVoiceUtils::WAKEUP_RESULT_DEFAULT, OHOS::IntellVoiceUtils::WAKEUP_ERROR_CODE_END);
     StopAudioSource();
     EngineUtil::Stop();
     adapterListener_->ClearBackupEvent();
@@ -745,7 +747,7 @@ int32_t WakeupEngineImpl::HandleRecognizingTimeout(const StateMsg & /* msg */, S
 {
     INTELL_VOICE_LOG_INFO("enter");
     WakeupTrack::reportWakeupTrack(OHOS::IntellVoiceUtils::WAKEUP_STAGE_SA_RECOGNIZING,
-        OHOS::IntellVoiceUtils::WAKEUP_RESULT_FAIL, OHOS::IntellVoiceUtils::SA_TIMEOUT_ERROR); 
+        OHOS::IntellVoiceUtils::WAKEUP_RESULT_FAIL, OHOS::IntellVoiceUtils::SA_TIMEOUT_ERROR);
     StopAudioSource();
     EngineUtil::Stop();
     nextState = State(INITIALIZED);
@@ -818,7 +820,8 @@ int32_t WakeupEngineImpl::HandleRelease(const StateMsg & /* msg */, State &nextS
     return 0;
 }
 
-bool WakeupEngineImpl::GetSwitchStatus(const std::string& key) {
+bool WakeupEngineImpl::GetSwitchStatus(const std::string& key)
+{
     auto ret = EngineCallbackMessage::CallFunc(QUERY_SWITCH_STATUS, key);
     if (!ret.has_value()) {
         INTELL_VOICE_LOG_ERROR("msg bus return no value");
@@ -888,7 +891,8 @@ void WakeupEngineImpl::PrintFirstFrameInfo(const std::vector<uint8_t> &channelDa
     int16_t sentenceEnd = *reinterpret_cast<const int16_t *>(bytes + 2);
     uint16_t dspType = *reinterpret_cast<const uint16_t *>(bytes + 8);
     uint8_t wakeupType = bytes[14];
-    INTELL_VOICE_LOG_INFO("%{public}s wakeup trigger, wakeup type:%{public}u, extend frame:%{public}d, end frame:%{public}d",
+    INTELL_VOICE_LOG_INFO("%{public}s wakeup trigger, wakeup type:%{public}u, "
+        "extend frame:%{public}d, end frame:%{public}d",
         (dspType == 1) ? "normal" : "lp", wakeupType, sentenceBegin, sentenceEnd);
 }
 
@@ -962,11 +966,11 @@ std::string WakeupEngineImpl::GetEventValue(int32_t uuid)
 uint32_t WakeupEngineImpl::get_current_time_ms()
 {
     struct timeval tv;
-    gettimeofday(&tv, NULL);
- 
+    gettimeofday(&tv, nullptr);
+
     int64_t sec = tv.tv_sec;
     int64_t day_sec = sec % SEC_PER_DAY;
-    return day_sec * 1000 + tv.tv_usec / 1000;
+    return day_sec * MS_PER_SEC + tv.tv_usec / US_PER_MS;
 }
 
 #ifdef SUPPORT_WINDOW_MANAGER

@@ -23,12 +23,12 @@
  *   IDLE -> INITIALIZING -> INITIALIZED -> RECOGNIZING -> RECOGNIZED
  */
 
-#include "idevmgr_hdi.h"
-#include <map>
-#include <chrono>
-#include <thread>
 #include <atomic>
+#include <chrono>
+#include <map>
+#include <thread>
 #include <message_parcel.h>
+#include "idevmgr_hdi.h"
 #include "v1_0/iintell_voice_engine_manager.h"
 #include "v1_0/iintell_voice_engine_adapter.h"
 #include "v1_0/iintell_voice_engine_callback.h"
@@ -45,6 +45,16 @@
 
 using namespace OHOS;
 using namespace OHOS::HDI;
+
+namespace {
+// Async delay (ms) before firing INIT_DONE callback from mock adapter
+constexpr int HDI_CB_INIT_DONE_DELAY_MS = 50;
+// Async delay (ms) before firing RECOGNIZE_COMPLETE / HEADSET_RECOGNIZE_COMPLETE
+constexpr int HDI_CB_RECOGNIZE_COMPLETE_DELAY_MS = 200;
+// Mock HDI version reported by GetVersion
+constexpr uint32_t HDI_MOCK_MAJOR_VERSION = 1;
+constexpr uint32_t HDI_MOCK_MINOR_VERSION = 3;
+} // namespace
 
 /* ==================== Device Manager ==================== */
 
@@ -102,7 +112,7 @@ public:
             auto cb = callback_;
             auto alive = alive_;
             std::thread([cb, alive]() {
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                std::this_thread::sleep_for(std::chrono::milliseconds(HDI_CB_INIT_DONE_DELAY_MS));
                 if (!alive->load()) {
                     return;
                 }
@@ -143,13 +153,14 @@ public:
             auto cb = callback_;
             auto alive = alive_;
             std::thread([cb, alive]() {
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                std::this_thread::sleep_for(std::chrono::milliseconds(HDI_CB_RECOGNIZE_COMPLETE_DELAY_MS));
                 if (!alive->load()) {
                     return;
                 }
                 IntellVoiceEngineCallBackEvent event;
                 // V1_2::INTELL_VOICE_ENGINE_MSG_HEADSET_RECOGNIZE_COMPLETE
-                event.msgId = static_cast<IntellVoiceEngineMessageType>(6);
+                event.msgId = static_cast<IntellVoiceEngineMessageType>(
+                    OHOS::HDI::IntelligentVoice::Engine::V1_2::INTELL_VOICE_ENGINE_MSG_HEADSET_RECOGNIZE_COMPLETE);
                 event.result = INTELL_VOICE_ENGINE_OK;
                 cb->OnIntellVoiceHdiEvent(event);
             }).detach();
@@ -207,7 +218,7 @@ public:
             auto cb = callback_;
             auto alive = alive_;
             std::thread([cb, alive]() {
-                std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                std::this_thread::sleep_for(std::chrono::milliseconds(HDI_CB_INIT_DONE_DELAY_MS));
                 if (!alive->load()) {
                     return;
                 }
@@ -247,7 +258,7 @@ public:
             auto cb = callback_;
             auto alive = alive_;
             std::thread([cb, alive]() {
-                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+                std::this_thread::sleep_for(std::chrono::milliseconds(HDI_CB_RECOGNIZE_COMPLETE_DELAY_MS));
                 if (!alive->load()) {
                     return;
                 }
@@ -337,8 +348,8 @@ class MockEngineManager : public IIntellVoiceEngineManager {
 public:
     int32_t GetVersion(uint32_t &majorVer, uint32_t &minorVer) override
     {
-        majorVer = 1;
-        minorVer = 3;
+        majorVer = HDI_MOCK_MAJOR_VERSION;
+        minorVer = HDI_MOCK_MINOR_VERSION;
         return HDF_SUCCESS;
     }
     int32_t GetAdapterDescriptors(std::vector<IntellVoiceEngineAdapterDescriptor> &descs) override
