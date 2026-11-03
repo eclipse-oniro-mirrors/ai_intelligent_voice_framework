@@ -30,7 +30,7 @@
 
 namespace OHOS {
 namespace IntellVoiceUtils {
-static const int S_IRWXQ = 0770;
+inline constexpr int S_IRWXQ = 0770;
 enum FileStatus {
     FILE_STATUS_FILE = 0,
     FILE_STATUS_DIR,

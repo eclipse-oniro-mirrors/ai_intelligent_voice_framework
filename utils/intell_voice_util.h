@@ -22,7 +22,7 @@
 
 namespace OHOS {
 namespace IntellVoiceUtils {
-static const std::string WAKEUP_CONFIG_PATH =
+inline const std::string WAKEUP_CONFIG_PATH =
     "/sys_prod/variant/region_comm/china/etc/intellvoice/wakeup/ap/wakeup_config.json";
 const std::string OHOS_MICROPHONE_PERMISSION = "ohos.permission.MICROPHONE";
 const std::string KEY_WAKEUP_ENGINE_BUNDLE_NAME = "WakeupEngineBundleName";
