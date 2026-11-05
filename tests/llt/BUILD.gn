@@ -137,7 +137,7 @@ ohos_unittest("intell_voice_service_mock_llt") {
   ]
 
     include_dirs = [
-    '.',
+    ".",
     "mock",
     "mock/ability_runtime/ability_manager/include",
     "mock/access_token/libaccesstoken_sdk/include",
