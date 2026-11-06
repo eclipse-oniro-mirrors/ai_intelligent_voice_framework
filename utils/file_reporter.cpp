@@ -192,7 +192,7 @@ sptr<Ashmem> FileReporter::CreateAshmemFromFilesInfo(const std::vector<uint8_t> 
         goto ERR_EXIT;
     }
 
-    INTELL_VOICE_LOG_INFO("filesContent size:%lu", filesContent.size());
+    INTELL_VOICE_LOG_INFO("filesContent size:%{public}zu", filesContent.size());
     return buffer;
 
 ERR_EXIT:
