@@ -42,8 +42,7 @@ bool TriggerDetector::StartRecognition()
         INTELL_VOICE_LOG_ERROR("service_ is nullptr");
         return false;
     }
-    service_->StartRecognition(uuid_, callback_);
-    return true;
+    return service_->StartRecognition(uuid_, callback_) == 0;
 }
 
 bool TriggerDetector::StopRecognition()

@@ -35,12 +35,13 @@ public:
     int32_t SendWakeupFile(const std::string &filePath, const std::vector<uint8_t> &buffer) { return 0; };
     int32_t GetUploadFiles(int numMax, std::vector<UploadFilesFromHdi> &files) { return 0; };
     void ClearUserDataInner() {};
-    void HeadsetHostDie() {};
+    void DeviceServiceDie(const std::string &serviceName) {};
     bool IsNeedUpdateComplete(int32_t result, const std::string &param) { return false; };
     bool IsNeedUpdateRetry() { return false; };
     int32_t SilenceUpdate() { return 0; };
     int32_t WhisperVprUpdate(bool reEnroll = false) { return 0; };
     int32_t CloneUpdate(const std::string &wakeupInfo, const sptr<IRemoteObject> &object) { return 0; };
+    int32_t ImplicitEnroll(const std::string &wakeupInfo, const sptr<IRemoteObject> &object) { return 0; };
     void SetDspSensibility(const std::string &sensibility) {};
     void OnServiceStart() {};
     void OnServiceStop() {};
@@ -50,14 +51,21 @@ public:
     bool AnyEngineExist(const std::vector<IntellVoiceEngineType>& types);
     bool RegisterProxyDeathRecipient(IntellVoiceEngineType type, const sptr<IRemoteObject> &object);
     bool DeregisterProxyDeathRecipient(IntellVoiceEngineType type);
+    bool RegisterDeviceDeathRecipient(const std::string &serviceName,
+        const sptr<IRemoteObject> &object) { return false; };
+    int32_t RegisterWakeupDevice(const std::string &macAddress, const WakeupDeviceInfo &info) { return 0; };
+    int32_t DeregisterWakeupDevice(const std::string &macAddress) { return 0; };
+    void OnAudioPolicyServiceChange(bool isAdded) {};
 
-    int32_t SetParameter(const std::string &keyValueList);
+    int32_t SetParameter(const std::string &key, const std::string &value);
     std::string GetParameter(const std::string &key);
     void EngineOnDetected(int32_t uuid);
     sptr<IIntellVoiceEngine> CreateEngine(IntellVoiceEngineType type, const std::string &param = "");
     int32_t ReleaseEngineInner(IntellVoiceEngineType type);
     bool CreateOrResetWakeupEngine();
     int32_t ServiceStopProc();
+    void SubscribeSwingEvent(const std::string &event) {};
+    void UnSubscribeSwingEvent(const std::string &event) {};
 
 private:
     sptr<IIntellVoiceEngine> CreateEngineInner(IntellVoiceEngineType type);

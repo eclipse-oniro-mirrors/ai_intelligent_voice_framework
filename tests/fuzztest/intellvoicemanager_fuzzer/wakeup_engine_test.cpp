@@ -116,20 +116,6 @@ static void TestGetWakeupPcm(const uint8_t *data, size_t sizeIn)
     INTELL_VOICE_LOG_INFO("WakeupEngine test GetWakeupPcm end, result:%{public}d", ret);
 }
 
-static void TestNotifyHeadsetWakeEvent(const uint8_t *data, size_t sizeIn)
-{
-    INTELL_VOICE_LOG_INFO("WakeupEngine test NotifyHeadsetWakeEvent start");
-    int32_t ret = g_engine->NotifyHeadsetWakeEvent();
-    INTELL_VOICE_LOG_INFO("WakeupEngine test NotifyHeadsetWakeEvent end, result:%{public}d", ret);
-}
-
-static void TestNotifyHeadsetHostEvent(const uint8_t *data, size_t sizeIn)
-{
-    INTELL_VOICE_LOG_INFO("WakeupEngine test NotifyHeadsetHostEvent start");
-    int32_t ret = g_engine->NotifyHeadsetHostEvent(static_cast<int32_t>(*data));
-    INTELL_VOICE_LOG_INFO("WakeupEngine test NotifyHeadsetHostEvent end, result:%{public}d", ret);
-}
-
 namespace {
 void (*g_wakeupFuncTable[])(const uint8_t *, size_t) = {TestSetSensibility,
     TestSetWakeupHapInfo,
@@ -140,9 +126,7 @@ void (*g_wakeupFuncTable[])(const uint8_t *, size_t) = {TestSetSensibility,
     TestStartCapturer,
     TestRead,
     TestStopCapturer,
-    TestGetWakeupPcm,
-    TestNotifyHeadsetWakeEvent,
-    TestNotifyHeadsetHostEvent};
+    TestGetWakeupPcm};
 }
 void TestWakeupEngineRandomFuzzer(const uint8_t *data, size_t sizeIn)
 {

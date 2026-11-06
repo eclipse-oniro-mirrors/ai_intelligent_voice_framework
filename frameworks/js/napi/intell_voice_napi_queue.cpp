@@ -148,6 +148,8 @@ void NapiAsync::CommonCallbackRoutine(napi_env env, AsyncContext *context, const
 void NapiAsync::HandlePromise(napi_env env, AsyncContext *context, const napi_value &data)
 {
     INTELL_VOICE_LOG_INFO("enter");
+    napi_handle_scope scope;
+    napi_open_handle_scope(env, &scope);
     napi_value result = nullptr;
     napi_value error = nullptr;
     napi_get_undefined(env, &result);
@@ -156,6 +158,7 @@ void NapiAsync::HandlePromise(napi_env env, AsyncContext *context, const napi_va
     if (context->result_ == NAPI_INTELLIGENT_VOICE_SUCCESS) {
         result = data;
         napi_resolve_deferred(env, context->deferred_, result);
+        napi_close_handle_scope(env, scope);
         return;
     }
     napi_value errMessage = nullptr;
@@ -165,10 +168,13 @@ void NapiAsync::HandlePromise(napi_env env, AsyncContext *context, const napi_va
     napi_create_string_utf8(env, std::to_string(context->result_).c_str(), NAPI_AUTO_LENGTH, &errCode);
     napi_create_error(env, errCode, errMessage, &error);
     napi_reject_deferred(env, context->deferred_, error);
+    napi_close_handle_scope(env, scope);
 }
 
 void NapiAsync::HandleAsyncCallback(napi_env env, AsyncContext *context, const napi_value &data)
 {
+    napi_handle_scope scope;
+    napi_open_handle_scope(env, &scope);
     napi_value args[ARGC_TWO] = {nullptr, nullptr};
     napi_value callback = nullptr;
     napi_value ret = nullptr;
@@ -186,6 +192,7 @@ void NapiAsync::HandleAsyncCallback(napi_env env, AsyncContext *context, const n
     }
     napi_get_reference_value(env, context->callbackRef_, &callback);
     napi_call_function(env, nullptr, callback, ARGC_TWO, args, &ret);
+    napi_close_handle_scope(env, scope);
 }
 
 void NapiAsync::AsyncCompleteCallback(napi_env env, napi_status status, void *data)

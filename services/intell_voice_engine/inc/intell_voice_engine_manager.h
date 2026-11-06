@@ -24,6 +24,7 @@
 #include "task_executor.h"
 #include "intell_voice_definitions.h"
 #include "i_intell_voice_service.h"
+#include "i_device_wakeup.h"
 
 namespace OHOS {
 namespace IntellVoiceEngine {
@@ -52,11 +53,14 @@ public:
     }
 
     bool AnyEngineExist(const std::vector<IntellVoiceEngineType> &types);
+    void OnAudioPolicyServiceChange(bool isAdded);
     bool RegisterProxyDeathRecipient(IntellVoiceEngineType type, const sptr<IRemoteObject> &object);
     bool DeregisterProxyDeathRecipient(IntellVoiceEngineType type);
+    bool RegisterDeviceDeathRecipient(const std::string &serviceName, const sptr<IRemoteObject> &object);
+    bool DeregisterDeviceDeathRecipient(const std::string &serviceName);
 
     int32_t GetUploadFiles(int numMax, std::vector<UploadFilesFromHdi> &files);
-    int32_t SetParameter(const std::string &sensibility);
+    int32_t SetParameter(const std::string &key, const std::string &value);
     std::string GetParameter(const std::string &key);
     int32_t GetWakeupSourceFilesList(std::vector<std::string> &cloneFiles);
     int32_t GetWakeupSourceFile(const std::string &filePath, std::vector<uint8_t> &buffer);
@@ -65,7 +69,7 @@ public:
     const std::string &configPath);
 
     void ClearUserDataInner();
-    void HeadsetHostDie();
+    void DeviceServiceDie(const std::string &serviceName);
     bool IsNeedUpdateComplete(int32_t result, const std::string &param);
     bool IsNeedUpdateRetry();
     void EngineOnDetected(int32_t uuid);
@@ -78,19 +82,26 @@ public:
     int32_t SilenceUpdate();
     int32_t WhisperVprUpdate(bool reEnroll = false);
     int32_t CloneUpdate(const std::string &wakeupInfo, const sptr<IRemoteObject> &object);
+    int32_t ImplicitEnroll(const std::string &wakeupInfo, const sptr<IRemoteObject> &object);
     int32_t ServiceStopProc();
+    int32_t RegisterWakeupDevice(const std::string &macAddress, const WakeupDeviceInfo &info);
+    int32_t DeregisterWakeupDevice(const std::string &macAddress);
     void SetDspSensibility(const std::string &sensibility);
     void OnServiceStart();
     void OnServiceStop();
+    void SubscribeSwingEvent(const std::string &event);
+    void UnSubscribeSwingEvent(const std::string &event);
 
 private:
-
     sptr<IIntellVoiceEngine> CreateEngineInner(IntellVoiceEngineType type,
         const std::string &param = "", bool reEnroll = false);
     void ReleaseUpdateEngine() override;
     bool CreateUpdateEngine(const std::string &param, bool reEnroll = false) override;
     void LoadIntellVoiceHost();
     void UnloadIntellVoiceHost();
+    int32_t GetUploadFilesFromVendor(int numMax, std::vector<UploadFilesFromHdi> &files);
+    int32_t GetUploadFilesFromSystem(int numMax, std::vector<UploadFilesFromHdi> &files);
+    int32_t ClearImplicitEnrollData(const std::string &key, const std::string &value);
 
 private:
     static std::mutex instanceMutex_;
@@ -101,6 +112,10 @@ private:
     std::map<IntellVoiceEngineType, sptr<EngineBase>> engines_;
     std::map<IntellVoiceEngineType, sptr<IntellVoiceUtils::IntellVoiceDeathRecipient>> proxyDeathRecipient_;
     std::map<IntellVoiceEngineType, sptr<IRemoteObject>> deathRecipientObj_;
+    std::mutex serviceDeathMutex_;
+    std::mutex engineOpMutex_ ;
+    std::map<std::string, sptr<IntellVoiceUtils::IntellVoiceDeathRecipient>> serviceDeathRecipient_;
+    std::map<std::string, sptr<IRemoteObject>> serviceDeathRecipientObj_;
 };
 }  // namespace IntellVoice
 }  // namespace OHOS

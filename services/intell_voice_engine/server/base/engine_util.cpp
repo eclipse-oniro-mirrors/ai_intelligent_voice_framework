@@ -297,8 +297,19 @@ void EngineUtil::SetSensibility()
         INTELL_VOICE_LOG_ERROR("no sensibility value");
         return;
     }
-    EngineCallbackMessage::CallFunc(TRIGGERMGR_SET_PARAMETER, "WAKEUP_SENSIBILITY", value);
+    EngineCallbackMessage::CallFunc(TRIGGERMGR_SET_PARAMETER, WAKEUP_SENSIBILITY, value);
     adapter_->SetParameter(SENSIBILITY_TEXT + sensibility);
+}
+
+void EngineUtil::SetTriggerParameter()
+{
+    for (const auto& param : TRIGGER_PARAMS) {
+        std::string value = HistoryInfoMgr::GetInstance().GetStringKVPair(param);
+        if (!value.empty()) {
+            EngineCallbackMessage::CallFunc(TRIGGERMGR_SET_PARAMETER, param, value);
+            INTELL_VOICE_LOG_INFO("set %{public}s:%{public}s", param.c_str(), value.c_str());
+        }
+    }
 }
 
 void EngineUtil::SelectInputDevice(DeviceType type)

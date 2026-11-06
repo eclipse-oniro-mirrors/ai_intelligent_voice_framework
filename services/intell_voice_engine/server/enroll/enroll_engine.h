@@ -14,6 +14,7 @@
  */
 #ifndef ENROLL_ENGINE_H
 #define ENROLL_ENGINE_H
+#include <atomic>
 #include <memory>
 #include <string>
 #include "v1_0/iintell_voice_engine_callback.h"
@@ -48,11 +49,16 @@ private:
     void StopAudioSource();
     void OnEnrollEvent(const OHOS::HDI::IntelligentVoice::Engine::V1_0::IntellVoiceEngineCallBackEvent &event);
     void OnEnrollComplete(int32_t result, const std::string &info);
+    std::string GetTSEParameter();
+    void SetParamOnAudioStopOrError();
 
 private:
     using EngineUtil::adapter_;
     std::string name_ = "lp enroll engine instance";
     bool isPcmFromExternal_ = false;
+    bool isWithCmdScenario_ = false;
+    bool isNormalRegMode_ = false;
+    bool isTopMicRegMode_ = false;
     std::atomic<int32_t> enrollResult_ = -1;
     uint32_t callerTokenId_ = 0;
     std::shared_ptr<EnrollAdapterListener> adapterListener_ = nullptr;
@@ -61,6 +67,7 @@ private:
     std::string wakeupPhrase_;
     std::mutex mutex_;
     OHOS::AudioStandard::AudioCapturerOptions capturerOptions_;
+    std::atomic<int32_t> tseResult_ = -1;
     friend class IntellVoiceUtils::SptrFactory<EngineBase, EnrollEngine>;
 };
 }

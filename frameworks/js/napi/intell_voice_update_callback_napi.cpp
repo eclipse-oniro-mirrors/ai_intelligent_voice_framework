@@ -20,7 +20,7 @@
 #define LOG_TAG "UpdateCallbackNapi"
 
 using namespace std;
-using namespace OHOS::HDI::IntelligentVoice::Engine::V1_0;
+using OHOS::HDI::IntelligentVoice::Engine::V1_3::IntellVoiceEngineErrors;
 
 namespace OHOS {
 namespace IntellVoiceNapi {
@@ -77,9 +77,27 @@ void IntellVoiceUpdateCallbackNapi::OnUpdateComplete(const int result)
         INTELL_VOICE_LOG_ERROR("context is nullptr");
         return;
     }
-
-    context->result = (result == 0) ? EnrollResult::SUCCESS : EnrollResult::UNKNOWN_ERROR;
+    context->result = ToResultEnum(result);
     OnJsCallBack(context);
+}
+
+EnrollResult IntellVoiceUpdateCallbackNapi::ToResultEnum(const int result)
+{
+    IntellVoiceEngineErrors errorCode = static_cast<IntellVoiceEngineErrors>(result);
+    switch (errorCode) {
+        case IntellVoiceEngineErrors::INTELL_VOICE_ENGINE_OK:
+            return EnrollResult::SUCCESS;
+        case IntellVoiceEngineErrors::INTELL_VOICE_ENGINE_ERROR_OFFSET:
+            return EnrollResult::UNKNOWN_ERROR;
+        case IntellVoiceEngineErrors::INTELL_VOICE_ENGINE_ENROLL_VPR_TRAIN_FAILED:
+            return EnrollResult::VPR_TRAIN_FAILED;
+        case IntellVoiceEngineErrors::INTELL_VOICE_ENGINE_WAKEUP_PHRASE_NOT_MATCH:
+            return EnrollResult::WAKEUP_PHRASE_NOT_MATCH;
+        case IntellVoiceEngineErrors::INTELL_VOICE_ENGINE_ENROLL_DIFFERENT_PERSON:
+            return EnrollResult::DIFFERENT_PERSON;
+        default:
+            return EnrollResult::UNKNOWN_ERROR;
+    }
 }
 
 void IntellVoiceUpdateCallbackNapi::UvWorkCallBack(uv_work_t *work, int status)
@@ -89,8 +107,17 @@ void IntellVoiceUpdateCallbackNapi::UvWorkCallBack(uv_work_t *work, int status)
     napi_value result = nullptr;
     if (asyncContext != nullptr) {
         napi_env env = asyncContext->env_;
+        napi_handle_scope scope = nullptr;
+        napi_status openStatus = napi_open_handle_scope(env, &scope);
+        if (openStatus != napi_ok || scope == nullptr) {
+            INTELL_VOICE_LOG_ERROR("open handle scope failed");
+            asyncContext->contextSp_.reset();
+            delete work;
+            return;
+        }
         result = SetValue(env, asyncContext->result);
         NapiAsync::CommonCallbackRoutine(env, asyncContext, result);
+        napi_close_handle_scope(env, scope);
     }
 
     delete work;

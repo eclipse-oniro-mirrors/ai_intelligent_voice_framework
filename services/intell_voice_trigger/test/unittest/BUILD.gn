@@ -15,7 +15,7 @@ import("//build/ohos.gni")
 import("//build/test.gni")
 import("//foundation/ai/intelligent_voice_framework/intell_voice_service.gni")
 
-module_output_path = "ai_intelligent_voice_framework/intell_voice"
+module_output_path = "intelligent_voice_framework/intelligent_voice_framework"
 
 ohos_unittest("intelligent_voice_trigger_unit_test") {
   testonly = true

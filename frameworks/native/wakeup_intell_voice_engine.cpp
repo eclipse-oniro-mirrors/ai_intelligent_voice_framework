@@ -70,7 +70,14 @@ int32_t WakeupIntellVoiceEngine::SetWakeupHapInfo(const WakeupHapInfo &info)
         return -1;
     }
     ret = engine_->SetParameter("wakeup_bundle_name=" + info.bundleName);
-    ret += engine_->SetParameter("wakeup_ability_name=" + info.abilityName);
+    if (ret != 0) {
+        INTELL_VOICE_LOG_ERROR("set wakeup_bundle_name failed, ret=%{public}d", ret);
+        return ret;
+    }
+    ret = engine_->SetParameter("wakeup_ability_name=" + info.abilityName);
+    if (ret != 0) {
+        INTELL_VOICE_LOG_ERROR("set wakeup_ability_name failed, ret=%{public}d", ret);
+    }
     return ret;
 }
 
@@ -152,24 +159,18 @@ int32_t WakeupIntellVoiceEngine::GetWakeupPcm(std::vector<uint8_t> &data)
     return engine_->GetWakeupPcm(data);
 }
 
-int32_t WakeupIntellVoiceEngine::NotifyHeadsetWakeEvent()
+int32_t WakeupIntellVoiceEngine::NotifyDeviceWakeupEvent(const std::string &macAddress, const EventDetail &event)
 {
-    INTELL_VOICE_LOG_INFO("enter");
+    INTELL_VOICE_LOG_INFO("enter, event:%{public}d", event.wakeupEvent);
     if (engine_ == nullptr) {
         INTELL_VOICE_LOG_ERROR("engine is null");
         return -1;
     }
-    return engine_->NotifyHeadsetWakeEvent();
-}
-
-int32_t WakeupIntellVoiceEngine::NotifyHeadsetHostEvent(int32_t event)
-{
-    INTELL_VOICE_LOG_INFO("enter, event:%{public}d", event);
-    if (engine_ == nullptr) {
-        INTELL_VOICE_LOG_ERROR("engine is null");
+    if (macAddress.empty()) {
+        INTELL_VOICE_LOG_ERROR("macAddress isEmpty");
         return -1;
     }
-    return engine_->NotifyHeadsetHostEvent(static_cast<OHOS::IntellVoiceEngine::HeadsetHostEventType>(event));
+    return engine_->NotifyDeviceWakeupEvent(macAddress, event);
 }
 }
 }

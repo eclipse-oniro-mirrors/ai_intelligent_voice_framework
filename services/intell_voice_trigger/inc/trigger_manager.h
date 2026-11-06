@@ -39,12 +39,18 @@ public:
     int32_t StartDetection(int32_t uuid);
     void StopDetection(int32_t uuid);
     int32_t SetParameter(const std::string &key, const std::string &value);
+
     std::string GetParameter(const std::string &key);
     void OnServiceStart();
     void OnServiceStop();
     void OnTelephonyStateRegistryServiceChange(bool isAdded);
-    void OnAudioDistributedServiceChange(bool isAdded);
     void OnAudioPolicyServiceChange(bool isAdded);
+#ifdef SUPPORT_RECORD_WAKEUP_CONCURRENT
+    void ClearConcurrentControlList(bool isWhiteList, bool isBlackList);
+#else
+    void OnAudioDistributedServiceChange(bool isAdded);
+#endif
+
 #ifdef POWER_MANAGER_ENABLE
     void OnPowerManagerServiceChange(bool isAdded);
 #endif
@@ -53,10 +59,16 @@ public:
 private:
     void AttachTelephonyObserver();
     void DetachTelephonyObserver();
-    void AttachAudioCaptureListener();
-    void DetachAudioCaptureListener();
     void AttachAudioRendererEventListener();
     void DetachAudioRendererEventListener();
+#ifdef SUPPORT_RECORD_WAKEUP_CONCURRENT
+    void AttachAudioCapturerEventListener();
+    void DetachAudioCapturerEventListener();
+#else
+    void AttachAudioCaptureListener();
+    void DetachAudioCaptureListener();
+#endif
+
 #ifdef POWER_MANAGER_ENABLE
     void AttachHibernateObserver();
     void DetachHibernateObserver();
@@ -65,9 +77,13 @@ private:
     void DetachFoldStatusListener();
     void AttachAudioSceneEventListener();
     void DetachAudioSceneEventListener();
+#ifdef SUPPORT_FAN_STATUS_LISTEN
+    void AttachFanStateListener();
+    void DetachFanStateListener();
+#endif
 
 private:
-    std::mutex detectorMutex_; //这个锁回头看看有没有必要删掉
+    std::mutex detectorMutex_;
     std::map<int32_t, std::shared_ptr<TriggerDetector>> detectors_;
     std::shared_ptr<TriggerService> service_ = nullptr;
 };

@@ -41,8 +41,7 @@ public:
     int32_t StopCapturer() override;
     int32_t GetWakeupPcm(std::vector<uint8_t> &data) override;
     int32_t Evaluate(const std::string &word, EvaluationResult &result) override;
-    int32_t NotifyHeadsetWakeEvent() override;
-    int32_t NotifyHeadsetHostEvent(HeadsetHostEventType event) override;
+    int32_t NotifyDeviceWakeupEvent(const std::string &macAddress, const EventDetail &event) override;
 
 private:
     static inline BrokerDelegator<IntellVoiceEngineProxy> delegator_;

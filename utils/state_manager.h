@@ -67,6 +67,34 @@ struct State {
     int32_t state = -1;
 };
 
+enum ProcessType {
+    PROCESS_IDLE = 0,
+    PROCESS_WAKEUP_PHONE = 1,
+    PROCESS_WAKEUP_HEADSET = 2,
+    PROCESS_WAKEUP_GLASSES = 3,
+    PROCESS_WISPHER_PHONE = 4,
+};
+
+using StateChangeCallback = std::function<void(const State &stateInfo, const ProcessType &type)>;
+
+class StateInfoListener {
+public:
+    explicit StateInfoListener() = default;
+    void SetCallback(StateChangeCallback callback)
+    {
+        callback_ = callback;
+    }
+    void OnStateChange(State state, ProcessType type)
+    {
+        if (callback_ != nullptr) {
+            callback_(state, type);
+        }
+    }
+
+private:
+    StateChangeCallback callback_;
+};
+
 struct StateInfo {
     virtual ~StateInfo(){};
     TimerCfg cfg;
@@ -166,6 +194,14 @@ struct ModuleStates : public ITimerObserver, private TimerMgr, private StateGrou
 protected:
     void ToState(std::map<State, StateActions*>::iterator &nextIt);
     void OnTimerEvent(TimerEvent &info) override;
+    void SetStateListener(std::shared_ptr<StateInfoListener> stateListener)
+    {
+        stateListener_ = stateListener;
+    }
+    void SetProcessType(ProcessType processType)
+    {
+        processType_ = processType;
+    }
 
 protected:
     std::map<State, StateActions*>::iterator currState_;
@@ -175,6 +211,8 @@ private:
     bool isInitSucc_ = false;
     std::map<State, StateActions*> states_;
     std::string name_;
+    ProcessType processType_;
+    std::shared_ptr<StateInfoListener> stateListener_ = nullptr;
 };
 
 #define ADDR(func) ([this](const StateMsg &msg, State &nextState)->int { return this->func(msg, nextState); })

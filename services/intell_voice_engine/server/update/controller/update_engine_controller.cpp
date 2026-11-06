@@ -93,8 +93,9 @@ int UpdateEngineController::UpdateArbitration(int priority)
 
     INTELL_VOICE_LOG_INFO("cur priority is lower than before, release old engine");
     if (updateStrategy_ != nullptr) {
-        updateStrategy_->OnUpdateCompleteCallback(UPDATE_STATE_COMPLETE_FAIL, true);
+        updateStrategy_->OnUpdateCompleteCallback(UPDATE_STATE_CONCURRENT, true);
     }
+
     ReleaseUpdateEngine();
     ClearRetryState();
     TimerMgr::Stop();

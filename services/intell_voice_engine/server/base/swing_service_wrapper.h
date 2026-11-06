@@ -37,6 +37,11 @@ namespace IntellVoiceEngine {
 using SubscribeSwingEventPtr = int (*)(const char *swingEventType, const char *eventParams);
 using UnSubscribeSwingEventPtr = int (*)(const char *swingEventType, const char *eventParams);
 
+const std::string SHORT_WORD_EVENT_TYPE = "AUDIO_WAKEUP_1_5";
+const std::string SHORT_WORD_DOMAIN_ID = "7";
+const std::string DUAL_MIC_EVENT_TYPE = "AUDIO_WAKEUP_1_5";
+const std::string DUAL_MIC_DOMAIN_ID = "7";
+
 struct SwingServiceManagerPriv {
     void *handle { nullptr };
     SubscribeSwingEventPtr subscribeSwingEvent { nullptr };
@@ -63,7 +68,8 @@ private:
     int32_t LoadLibFunction();
 
 private:
-    std::mutex mutex_ {};
+    static std::mutex mutex_;
+    static bool isModelLoaded_;
     SwingServiceManagerPriv swingServicePriv_;
 };
 }

@@ -35,8 +35,21 @@ bool AdapterHostManager::Init(const IntellVoiceEngineAdapterDescriptor &desc)
     INTELL_VOICE_LOG_INFO("enter");
     const auto &engineHostProxy1_0 = EngineHostManager::GetInstance().GetEngineHostProxy1_0();
     const auto &engineHostProxy1_2 = EngineHostManager::GetInstance().GetEngineHostProxy1_2();
+    const auto &engineHostProxy1_3 = EngineHostManager::GetInstance().GetEngineHostProxy1_3();
     CHECK_CONDITION_RETURN_FALSE(engineHostProxy1_0 == nullptr, "engine host proxy_v1_0 is null");
 
+    if (engineHostProxy1_3 != nullptr) {
+        OHOS::HDI::IntelligentVoice::Engine::V1_3::IntellVoiceEngineAdapterDescriptor descriptor;
+        descriptor.adapterType
+            = static_cast<OHOS::HDI::IntelligentVoice::Engine::V1_3::IntellVoiceEngineAdapterType>(desc.adapterType);
+        engineHostProxy1_3->CreateAdapter_V_3(descriptor, adapterProxy1_2_);
+        if (adapterProxy1_2_ == nullptr) {
+            INTELL_VOICE_LOG_ERROR("engine adapter proxy1_2_ is nullptr");
+            return false;
+        }
+        adapterProxy1_0_ = adapterProxy1_2_;
+        return true;
+    }
     if (engineHostProxy1_2 != nullptr) {
         engineHostProxy1_2->CreateAdapter_V_2(desc, adapterProxy1_2_);
         if (adapterProxy1_2_ == nullptr) {

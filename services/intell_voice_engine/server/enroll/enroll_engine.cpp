@@ -27,6 +27,8 @@
 #include "update_engine_utils.h"
 #include "engine_host_manager.h"
 #include "history_info_mgr.h"
+#include "engine_offline_audio_processor.h"
+#include "offline_audio_effect_manager.h"
 
 #define LOG_TAG "EnrollEngine"
 
@@ -39,8 +41,10 @@ namespace OHOS {
 namespace IntellVoiceEngine {
 static constexpr uint32_t MIN_BUFFER_SIZE = 1280; // 16 * 2 * 40ms
 static constexpr uint32_t INTERVAL = 125; // 125 * 40ms = 5s
+static constexpr uint32_t WITHCMD_INTERVAL = 200; // 200 * 40ms = 8s
 static constexpr uint32_t MAX_ENROLL_TASK_NUM = 100;
 static const std::string ENROLL_THREAD_NAME = "EnrollEngThread";
+static const std::string PCM_PREFIX = "/data/service/el0/intelligent_voice/wakeup/enrollAudioBackup/";
 
 EnrollEngine::EnrollEngine() : TaskExecutor(ENROLL_THREAD_NAME, MAX_ENROLL_TASK_NUM)
 {
@@ -72,6 +76,22 @@ void EnrollEngine::OnEnrollEvent(
         enrollResult_.store(static_cast<int32_t>(event.result));
         IntellVoiceEngineManager::SetEnrollResult(INTELL_VOICE_ENROLL,
             (static_cast<int32_t>(event.result) == 0 ? true : false));
+
+        bool tse_support = IntellVoiceUtil::GetSupportAbility(ABILITY_TSE);
+        if (tse_support) {
+            // Create processor instance
+            auto processor = std::make_shared<IntelligentVoice::Engine::IntellVoiceEngine::OfflineAudioProcessor>();
+            INTELL_VOICE_LOG_INFO("GetSupportAbility_tse_support: true, audio_asr_tse_reg_enter");
+            std::string fPath1 = PCM_PREFIX + "enroll_1.pcm";
+            std::string fPath2 = PCM_PREFIX + "enroll_2.pcm";
+            std::string fPath3 = PCM_PREFIX + "enroll_3.pcm";
+            std::string fPath4 = PCM_PREFIX + "enroll_phrase.txt";
+            TaskExecutor::AddAsyncTask([processor, fPath1, fPath2, fPath3, fPath4, this]() {
+                tseResult_ = processor->ProcessOfflineAudioWhile(fPath1, fPath2, fPath3, fPath4);
+            }, "OfflineAudioProcessor::ProcessOfflineAudioWhile", false);
+        } else {
+            INTELL_VOICE_LOG_INFO("GetSupportAbility_tse_support: false");
+        }
     }
 }
 
@@ -237,7 +257,17 @@ int32_t EnrollEngine::SetParameter(const std::string &keyValueList)
     }
 
     INTELL_VOICE_LOG_INFO("EnrollEngine SetParameter:%{public}s", keyValueList.c_str());
+    if (keyValueList == "enrollScenario=withcmd") {
+            isWithCmdScenario_ = true;
+    }
 
+    if (keyValueList == "asr_ns_mode=NORMAL_REG") {
+        isNormalRegMode_ = true;
+    }
+
+    if (keyValueList == "asr_ns_mode=TOPMIC_REG") {
+        isTopMicRegMode_ = true;
+    }
     return EngineUtil::SetParameter(keyValueList);
 }
 
@@ -278,9 +308,21 @@ bool EnrollEngine::SetParameterInner(const std::string &keyValueList)
     return false;
 }
 
+std::string EnrollEngine::GetTSEParameter()
+{
+    if (tseResult_ == 0) {
+        return "1";
+    } else {
+        return "-1";
+    }
+}
+
 std::string EnrollEngine::GetParameter(const std::string &key)
 {
     std::lock_guard<std::mutex> lock(mutex_);
+    if (key == "IS_OWNER_VOICE_ENROLLMENT_COMPLETED") {
+        return GetTSEParameter();
+    }
     return EngineUtil::GetParameter(key);
 }
 
@@ -303,9 +345,25 @@ int32_t EnrollEngine::Evaluate(const std::string &word, EvaluationResult &result
     return ret;
 }
 
+void EnrollEngine::SetParamOnAudioStopOrError()
+{
+    if (!isNormalRegMode_ && !isTopMicRegMode_) {
+        return;
+    }
+    auto audioSystemManager = AudioSystemManager::GetInstance();
+    if (audioSystemManager == nullptr) {
+        INTELL_VOICE_LOG_ERROR("audioSystemManager is nullptr");
+        return;
+    }
+    INTELL_VOICE_LOG_INFO("set aec_mode and ns_mode bypass");
+    audioSystemManager->SetAsrAecMode(AsrAecMode::BYPASS);
+    audioSystemManager->SetAsrNoiseSuppressionMode(AsrNoiseSuppressionMode::BYPASS);
+}
+
 bool EnrollEngine::StartAudioSource()
 {
     callerTokenId_ = IPCSkeleton::GetCallingTokenID();
+    uint32_t bufferCnt;
     if (!IntellVoiceUtil::RecordPermissionPrivacy(OHOS_MICROPHONE_PERMISSION, callerTokenId_,
         INTELL_VOICE_PERMISSION_START)) {
         INTELL_VOICE_LOG_ERROR("record permissionPrivacy failed");
@@ -316,7 +374,8 @@ bool EnrollEngine::StartAudioSource()
         if ((adapter_ != nullptr) && (!isEnd)) {
             std::vector<uint8_t> audioBuff(&buffer[0], &buffer[size]);
             adapter_->WriteAudio(audioBuff);
-        }}, [&] () {
+        }
+    }, [&] () {
             INTELL_VOICE_LOG_INFO("end of pcm");
             if (adapter_ != nullptr) {
                 adapter_->SetParameter("end_of_pcm=true");
@@ -326,19 +385,38 @@ bool EnrollEngine::StartAudioSource()
         INTELL_VOICE_LOG_ERROR("create listener failed");
         return false;
     }
-
-    audioSource_ = std::make_unique<AudioSource>(MIN_BUFFER_SIZE, INTERVAL, std::move(listener),
+    if (isWithCmdScenario_) {
+        bufferCnt = WITHCMD_INTERVAL;
+    } else {
+        bufferCnt = INTERVAL;
+    }
+    audioSource_ = std::make_unique<AudioSource>(MIN_BUFFER_SIZE, bufferCnt, std::move(listener),
         capturerOptions_);
     if (audioSource_ == nullptr) {
         INTELL_VOICE_LOG_ERROR("create audio source failed");
         return false;
     }
 
+    if (isNormalRegMode_ || isTopMicRegMode_) {
+        auto audioSystemManager = AudioSystemManager::GetInstance();
+        if (audioSystemManager != nullptr) {
+            INTELL_VOICE_LOG_INFO("set normal reg mode or top mic reg mode");
+            audioSystemManager->SetAsrAecMode(AsrAecMode::STANDARD);
+            audioSystemManager->SetAsrNoiseSuppressionMode(isNormalRegMode_ ?
+                        AsrNoiseSuppressionMode::NORMAL_REG : AsrNoiseSuppressionMode::TOPMIC_REG);
+        } else {
+            INTELL_VOICE_LOG_ERROR("audioSystemManager is null");
+        }
+    }
+
     if (!audioSource_->Start()) {
         INTELL_VOICE_LOG_ERROR("start capturer failed");
+        SetParamOnAudioStopOrError();
         audioSource_ = nullptr;
         IntellVoiceUtil::RecordPermissionPrivacy(OHOS_MICROPHONE_PERMISSION, callerTokenId_,
             INTELL_VOICE_PERMISSION_STOP);
+        isNormalRegMode_ = false;
+        isTopMicRegMode_ = false;
         return false;
     }
     return true;
@@ -348,12 +426,15 @@ void EnrollEngine::StopAudioSource()
 {
     INTELL_VOICE_LOG_INFO("enter");
     if (audioSource_ != nullptr) {
-        INTELL_VOICE_LOG_INFO("stop audio sopurce");
+        INTELL_VOICE_LOG_INFO("stop audio source");
+        SetParamOnAudioStopOrError();
         audioSource_->Stop();
         audioSource_ = nullptr;
         IntellVoiceUtil::RecordPermissionPrivacy(OHOS_MICROPHONE_PERMISSION, callerTokenId_,
             INTELL_VOICE_PERMISSION_STOP);
     }
+    isNormalRegMode_ = false;
+    isTopMicRegMode_ = false;
 }
 }
 }

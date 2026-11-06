@@ -142,6 +142,34 @@ void TriggerService::DetachTelephonyObserver()
 }
 #endif
 
+#ifdef SUPPORT_RECORD_WAKEUP_CONCURRENT
+void TriggerService::ClearConcurrentControlList(bool isWhiteList, bool isBlackList)
+{
+    if (triggerHelper_ == nullptr) {
+        INTELL_VOICE_LOG_ERROR("trigger helper is nullptr");
+        return;
+    }
+    triggerHelper_->ClearConcurrentControlList(isWhiteList, isBlackList);
+}
+
+void TriggerService::AttachAudioCapturerEventListener()
+{
+    if (triggerHelper_ == nullptr) {
+        INTELL_VOICE_LOG_ERROR("trigger helper is nullptr");
+        return;
+    }
+    triggerHelper_->AttachAudioEngineListener();
+}
+
+void TriggerService::DetachAudioCapturerEventListener()
+{
+    if (triggerHelper_ == nullptr) {
+        INTELL_VOICE_LOG_ERROR("trigger helper is nullptr");
+        return;
+    }
+    triggerHelper_->DetachAudioEngineListener();
+}
+#else
 void TriggerService::AttachAudioCaptureListener()
 {
     if (triggerHelper_ == nullptr) {
@@ -159,6 +187,7 @@ void TriggerService::DetachAudioCaptureListener()
     }
     triggerHelper_->DetachAudioCaptureListener();
 }
+#endif
 
 void TriggerService::AttachAudioRendererEventListener()
 {
@@ -195,6 +224,26 @@ void TriggerService::DetachAudioSceneEventListener()
     }
     triggerHelper_->DetachAudioSceneEventListener();
 }
+
+#ifdef SUPPORT_FAN_STATUS_LISTEN
+void TriggerService::AttachFanStateListener()
+{
+    if (triggerHelper_ == nullptr) {
+        INTELL_VOICE_LOG_ERROR("trigger helper is nullptr");
+        return;
+    }
+    triggerHelper_->AttachFanStateListener();
+}
+
+void TriggerService::DetachFanStateListener()
+{
+    if (triggerHelper_ == nullptr) {
+        INTELL_VOICE_LOG_ERROR("trigger helper is nullptr");
+        return;
+    }
+    triggerHelper_->DetachFanStateListener();
+}
+#endif
 
 #ifdef POWER_MANAGER_ENABLE
 void TriggerService::AttachHibernateObserver()

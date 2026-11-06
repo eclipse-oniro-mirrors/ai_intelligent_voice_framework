@@ -22,7 +22,8 @@
 #define LOG_TAG "IntellVoiceServiceProxy"
 namespace OHOS {
 namespace IntellVoiceEngine {
-#define CROSS_PROCESS_BUF_SIZE_LIMIT (256 *1024)
+static constexpr uint32_t CROSS_PROCESS_BUF_SIZE_LIMIT = 256 * 1024;
+static constexpr uint32_t CLONE_FILES_NUM_MAX = 100;
 
 int32_t IntellVoiceServiceProxy::CreateIntellVoiceEngine(IntellVoiceEngineType type, sptr<IIntellVoiceEngine> &inst)
 {
@@ -163,6 +164,10 @@ int32_t IntellVoiceServiceProxy::GetWakeupSourceFilesList(std::vector<std::strin
     }
 
     uint32_t size = reply.ReadUint32();
+    if (size > CLONE_FILES_NUM_MAX) {
+        INTELL_VOICE_LOG_ERROR("clone files num is too big: %{public}u", size);
+        return -1;
+    }
     cloneFiles.reserve(size);
     for (uint32_t i = 0; i < size; i++) {
         cloneFiles.push_back(reply.ReadString());
@@ -191,14 +196,14 @@ int32_t IntellVoiceServiceProxy::GetWakeupSourceFile(const std::string &filePath
     }
 
     uint32_t size = reply.ReadUint32();
-    const uint8_t *buff = reply.ReadBuffer(size);
-    if (buff == nullptr) {
-        INTELL_VOICE_LOG_ERROR("buf is null");
+    if (size == 0 || size > CROSS_PROCESS_BUF_SIZE_LIMIT) {
+        INTELL_VOICE_LOG_ERROR("buf size is invalid %{public}u", size);
         return -1;
     }
 
-    if (size == 0 || size > CROSS_PROCESS_BUF_SIZE_LIMIT) {
-        INTELL_VOICE_LOG_ERROR("buf size is invalid %{public}u", size);
+    const uint8_t *buff = reply.ReadBuffer(size);
+    if (buff == nullptr) {
+        INTELL_VOICE_LOG_ERROR("buf is null");
         return -1;
     }
 
@@ -264,6 +269,46 @@ int32_t IntellVoiceServiceProxy::ClearUserData()
     int32_t error = Remote()->SendRequest(HDI_INTELL_VOICE_SERVICE_CLEAR_USER_DATA, data, reply, option);
     if (error != 0) {
         INTELL_VOICE_LOG_ERROR("clear user data error: %{public}d", error);
+        return -1;
+    }
+    return reply.ReadInt32();
+}
+
+int32_t IntellVoiceServiceProxy::RegisterDeviceWakeupInfo(const std::string &macAddress, const WakeupDeviceInfo &info)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+
+    data.WriteInterfaceToken(IIntellVoiceService::GetDescriptor());
+    data.WriteString(macAddress);
+    data.WriteUint32(info.type);
+    data.WriteString(info.serviceName);
+    data.WriteString(info.parameters);
+    auto stub = sptr<IntellVoiceDeathRecipientStub>(new (std::nothrow) IntellVoiceDeathRecipientStub());
+    if (stub == nullptr) {
+        INTELL_VOICE_LOG_ERROR("DeathRecipient construct failed");
+        return -1;
+    }
+    data.WriteRemoteObject(stub);
+    int32_t error = Remote()->SendRequest(HDI_INTELL_VOICE_SERVICE_REGISTER_DEVICE, data, reply, option);
+    if (error != 0) {
+        INTELL_VOICE_LOG_ERROR("register device wakeupInfo error: %{public}d", error);
+        return -1;
+    }
+    return reply.ReadInt32();
+}
+
+int32_t IntellVoiceServiceProxy::DeregisterDeviceWakeupInfo(const std::string &macAddress)
+{
+    MessageParcel data;
+    MessageParcel reply;
+    MessageOption option;
+    data.WriteInterfaceToken(IIntellVoiceService::GetDescriptor());
+    data.WriteString(macAddress);
+    int32_t error = Remote()->SendRequest(HDI_INTELL_VOICE_SERVICE_DEREGISTER_DEVICE, data, reply, option);
+    if (error != 0) {
+        INTELL_VOICE_LOG_ERROR("deregister device wakeupInfo error: %{public}d", error);
         return -1;
     }
     return reply.ReadInt32();

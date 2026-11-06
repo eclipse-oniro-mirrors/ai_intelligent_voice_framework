@@ -43,6 +43,8 @@ ohos_source_set("server_source") {
     "-DHILOG_ENABLE",
     "-DENABLE_DEBUG",
     "-DUSE_FFRT",
+    "-Oz",
+    "-flto",
   ]
 
   defines = []
@@ -81,6 +83,10 @@ ohos_source_set("server_source") {
     defines += [ "POWER_MANAGER_ENABLE" ]
   }
 
+  if(intelligent_voice_framework_record_wakeup_concurrent_enable) {
+    defines += [ "SUPPORT_RECORD_WAKEUP_CONCURRENT" ]
+  }
+
   if (intelligent_voice_framework_trigger_enable) {
     cflags_cc += [ "-DTRIGGER_ENABLE" ]
   }
@@ -95,7 +101,6 @@ ohos_source_set("server_source") {
       cflags_cc += [ "-DFIRST_STAGE_ONESHOT_ENABLE" ]
     }
   }
-
   subsystem_name = "ai"
   part_name = "intelligent_voice_framework"
 }

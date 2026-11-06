@@ -37,17 +37,12 @@ int32_t EngineBase::GetWakeupPcm(std::vector<uint8_t> & /* data */)
     return 0;
 }
 
-int32_t EngineBase::NotifyHeadsetWakeEvent()
-{
-    return 0;
-}
-
 int32_t EngineBase::Evaluate(const std::string & /* word */, EvaluationResult & /* result */)
 {
     return 0;
 }
 
-int32_t EngineBase::NotifyHeadsetHostEvent(HeadsetHostEventType /* event */)
+int32_t EngineBase::NotifyDeviceWakeupEvent(const std::string & /* macAddress */, const EventDetail & /* event */)
 {
     return 0;
 }

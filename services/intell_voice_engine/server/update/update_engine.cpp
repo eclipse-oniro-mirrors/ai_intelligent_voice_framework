@@ -12,21 +12,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "update_engine.h"
 #include <fstream>
+#include <thread>
 #include "securec.h"
 #include "intell_voice_log.h"
-
 #include "update_adapter_listener.h"
 #include "time_util.h"
 #include "scope_guard.h"
 #include "adapter_callback_service.h"
 #include "engine_callback_message.h"
 #include "history_info_mgr.h"
-#include <thread>
 #include "update_engine_utils.h"
 #include "engine_host_manager.h"
 #include "intell_voice_definitions.h"
+#include "update_engine.h"
 
 #define LOG_TAG "UpdateEngine"
 

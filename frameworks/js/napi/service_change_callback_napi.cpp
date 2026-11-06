@@ -63,18 +63,31 @@ void ServiceChangeCallbackNapi::OnJsCallbackServiceChange(int32_t status)
     uv_work_t *work = new (std::nothrow) uv_work_t;
     CHECK_CONDITION_RETURN_VOID((work == nullptr), "Create uv work failed, no memory");
     work->data = new ServiceChangeCallbackData { status, callbackRef_ };
-    CHECK_CONDITION_RETURN_VOID((work->data == nullptr), "Create uv work data failed, no memory");
+    if (work->data == nullptr) {
+        INTELL_VOICE_LOG_ERROR("Create uv work data failed, no memory");
+        delete work;
+        return;
+    }
 
     int32_t ret = uv_queue_work_with_qos(loop_, work, [](uv_work_t *work) {}, [](uv_work_t *work, int uvStatus) {
         ServiceChangeCallbackData *callbackData = reinterpret_cast<ServiceChangeCallbackData *>(work->data);
+        napi_handle_scope scope = nullptr;
         ON_SCOPE_EXIT {
             INTELL_VOICE_LOG_INFO("clear momery");
+            if (scope != nullptr) {
+                napi_close_handle_scope(callbackData->callback->env_, scope);
+            }
             delete callbackData;
             delete work;
         };
 
         CHECK_CONDITION_RETURN_VOID((callbackData->callback == nullptr), "callback is nullptr");
         napi_env env = callbackData->callback->env_;
+        napi_status openStatus = napi_open_handle_scope(env, &scope);
+        if (openStatus != napi_ok || scope == nullptr) {
+            INTELL_VOICE_LOG_ERROR("open handle scope failed");
+            return;
+        }
         napi_value jsCallback = callbackData->callback->GetRefValue();
         CHECK_CONDITION_RETURN_VOID((jsCallback == nullptr), "callback ref is nullptr");
 

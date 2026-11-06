@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <target>
+        <name>intell_voice_service_llt</name>
+        <option name="isNativeTestCase" value="true"/>
+        <option name="testTimeOut" value="60000"/>
+    </target>
+</configuration>

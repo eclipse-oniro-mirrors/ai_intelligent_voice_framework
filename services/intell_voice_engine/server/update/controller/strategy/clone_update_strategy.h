@@ -15,6 +15,7 @@
 #ifndef CLONE_UPDATE_STRATEGY_H
 #define CLONE_UPDATE_STRATEGY_H
 
+#include <thread>
 #include "update_strategy.h"
 #include "i_intell_voice_update_callback.h"
 

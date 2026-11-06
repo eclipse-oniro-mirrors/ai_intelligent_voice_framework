@@ -33,9 +33,10 @@ public:
     bool IsModelExist(int32_t uuid) { return false; };
     void CreateDetector(int32_t uuid, std::function<void()> onDetected) {};
     void ReleaseTriggerDetector(int32_t uuid) {};
-    int32_t StartDetection(int32_t uuid) { return 0;};
+    int32_t StartDetection(int32_t uuid) { return 1; };
     void StopDetection(int32_t uuid) {};
     int32_t SetParameter(const std::string &key, const std::string &value) { return 0; };
+    void ClearConcurrentControlList(bool isWhiteList, bool isBlackList){};
     std::string GetParameter(const std::string &key) { return ""; };
     void OnServiceStart() {};
     void OnServiceStop() {};

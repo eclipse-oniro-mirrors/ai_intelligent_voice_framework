@@ -21,6 +21,7 @@
 #include "history_info_mgr.h"
 #include "json/json.h"
 #include "intell_voice_definitions.h"
+#include "engine_offline_audio_processor.h"
 
 #define LOG_TAG "CloneUpdateStrategy"
 
@@ -28,6 +29,8 @@ using namespace OHOS::IntellVoiceUtils;
 
 namespace OHOS {
 namespace IntellVoiceEngine {
+static const std::string PCM_PREFIX = "/data/service/el0/intelligent_voice/wakeup/enrollAudioBackup/";
+
 CloneUpdateStrategy::CloneUpdateStrategy(const std::string &param,
     sptr<IIntelligentVoiceUpdateCallback> updateCallback): IUpdateStrategy(param), updateCallback_(updateCallback)
 {
@@ -100,13 +103,32 @@ void CloneUpdateStrategy::SetBundleAndAbilityName()
 
 int CloneUpdateStrategy::OnUpdateCompleteCallback(const int result, bool isLast)
 {
-    if (updateCallback_ != nullptr) {
-        INTELL_VOICE_LOG_INFO("enter");
-        if (result == UPDATE_STATE_COMPLETE_SUCCESS) {
-            SetBundleAndAbilityName();
-        }
-        updateCallback_->OnUpdateComplete(result);
+    if (updateCallback_ == nullptr) {
+        return 0;
     }
+    INTELL_VOICE_LOG_INFO("enter");
+    if (result == UPDATE_STATE_COMPLETE_SUCCESS) {
+        SetBundleAndAbilityName();
+        bool tse_support = IntellVoiceUtil::GetSupportAbility(ABILITY_TSE);
+        if (tse_support) {
+            // Create processor instance
+            INTELL_VOICE_LOG_INFO("GetSupportAbility_tse_support: true, audio_asr_tse_reg_enter");
+            auto processor = std::make_shared<IntelligentVoice::Engine::IntellVoiceEngine::OfflineAudioProcessor>();
+            INTELL_VOICE_LOG_INFO("audio_asr_clone_enter");
+
+            std::string fPath1 = PCM_PREFIX + "enroll_1.pcm";
+            std::string fPath2 = PCM_PREFIX + "enroll_2.pcm";
+            std::string fPath3 = PCM_PREFIX + "enroll_3.pcm";
+            std::string fPath4 = PCM_PREFIX + "enroll_phrase.txt";
+            std::thread t([processor, fPath1, fPath2, fPath3, fPath4]() {
+                processor->ProcessOfflineAudioWhile(fPath1, fPath2, fPath3, fPath4);
+            });
+            t.join();
+        } else {
+            INTELL_VOICE_LOG_INFO("GetSupportAbility_tse_support: false");
+        }
+    }
+    updateCallback_->OnUpdateComplete(result);
 
     return  0;
 }

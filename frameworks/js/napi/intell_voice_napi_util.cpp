@@ -137,6 +137,11 @@ napi_status GetValue(napi_env env, napi_value jsValue, string &value)
     }
 
     status = napi_get_value_string_utf8(env, jsValue, buffer, bufferSize + 1, &bufferSize);
+    if (status != napi_ok) {
+        INTELL_VOICE_LOG_ERROR("napi_get_value_string_utf8 failed");
+        delete[] buffer;
+        return status;
+    }
     value = buffer;
 
     delete[] buffer;

@@ -71,6 +71,7 @@ private:
     bool CreateWakeupSourceStopCallback();
     void DestroyWakeupSourceStopCallback();
     void OnInitDone(int32_t result);
+    int32_t WakeupSource(void);
 
 private:
     bool InitStates();

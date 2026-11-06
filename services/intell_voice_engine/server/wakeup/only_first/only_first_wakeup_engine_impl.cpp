@@ -12,6 +12,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#include <sys/syscall.h>
+#include <sys/resource.h>
 #include "only_first_wakeup_engine_impl.h"
 
 #include "audio_system_manager.h"
@@ -32,9 +34,10 @@ namespace IntellVoiceEngine {
 static constexpr uint32_t MIN_BUFFER_SIZE = 640;
 static constexpr uint32_t INTERVAL = 96;
 static const std::string WAKEUP_SOURCE_CHANNEL = "wakeup_source_channel";
-static constexpr int64_t RECOGNIZE_COMPLETE_TIMEOUT_US = 2 * 1000 * 1000; //2s
-static constexpr int64_t READ_CAPTURER_TIMEOUT_US = 10 * 1000 * 1000; //10s
-
+static constexpr int64_t RECOGNIZE_COMPLETE_TIMEOUT_US = 2 * 1000 * 1000; // 2s
+static constexpr int64_t READ_CAPTURER_TIMEOUT_US = 10 * 1000 * 1000; // 10s
+static constexpr int def_priority = 0; // prio 20 = 20 - (0)
+static constexpr int high_priority = -20; // prio 40 = 20 - (-20)
 OnlyFirstWakeupEngineImpl::OnlyFirstWakeupEngineImpl()
     : ModuleStates(State(IDLE), "OnlyFirstWakeupEngineImpl", "WakeupThread")
 {
@@ -138,8 +141,7 @@ bool OnlyFirstWakeupEngineImpl::StartAudioSource()
             ReadBufferCallback(buffer, size, isEnd);
         },
         [&]() {
-            IntellVoiceUtil::StartAbility("single_level_event");
-            INTELL_VOICE_LOG_INFO("single_level_event");
+            INTELL_VOICE_LOG_INFO("read %{public}d frame", INTERVAL);
         });
     if (listener == nullptr) {
         INTELL_VOICE_LOG_ERROR("create listener failed");
@@ -212,17 +214,8 @@ int32_t OnlyFirstWakeupEngineImpl::HandleInit(const StateMsg & /* msg */, State 
     return 0;
 }
 
-int32_t OnlyFirstWakeupEngineImpl::HandleStart(const StateMsg &msg, State &nextState)
+int32_t OnlyFirstWakeupEngineImpl::WakeupSource(void)
 {
-    int32_t *msgBody = reinterpret_cast<int32_t *>(msg.inMsg);
-    if (msgBody == nullptr) {
-        INTELL_VOICE_LOG_ERROR("msgBody is nullptr");
-        return -1;
-    }
-
-    channelId_ = CHANNEL_ID_0;
-    INTELL_VOICE_LOG_INFO("enter, channel id is %{public}d", channelId_);
-
     if (!CreateWakeupSourceStopCallback()) {
         INTELL_VOICE_LOG_ERROR("create wakeup source stop callback failed");
         return -1;
@@ -233,9 +226,37 @@ int32_t OnlyFirstWakeupEngineImpl::HandleStart(const StateMsg &msg, State &nextS
         return -1;
     }
 
-    INTELL_VOICE_LOG_INFO("exit");
-    nextState = State(RECOGNIZED);
     return 0;
+}
+
+int32_t OnlyFirstWakeupEngineImpl::HandleStart(const StateMsg &msg, State &nextState)
+{
+    int32_t *msgBody = reinterpret_cast<int32_t *>(msg.inMsg);
+    int32_t ret = 0;
+    if (msgBody == nullptr) {
+        INTELL_VOICE_LOG_ERROR("msgBody is nullptr");
+        return -1;
+    }
+
+    channelId_ = CHANNEL_ID_0;
+    INTELL_VOICE_LOG_INFO("enter, channel id is %{public}d", channelId_);
+    IntellVoiceUtil::StartAbility("single_level_event");
+    INTELL_VOICE_LOG_INFO("single_level_event");
+
+    if (setpriority(PRIO_PROCESS, syscall(SYS_gettid), high_priority) != 0) {
+        INTELL_VOICE_LOG_ERROR("set high priority err");
+    }
+
+    ret = WakeupSource();
+    if (ret == 0) {
+        nextState = State(RECOGNIZED);
+    }
+
+    if (setpriority(PRIO_PROCESS, syscall(SYS_gettid), def_priority) != 0) {
+        INTELL_VOICE_LOG_ERROR("set def priority err");
+    }
+    INTELL_VOICE_LOG_INFO("exit");
+    return ret;
 }
 
 int32_t OnlyFirstWakeupEngineImpl::HandleStartCapturer(const StateMsg &msg, State &nextState)

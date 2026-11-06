@@ -13,11 +13,13 @@
  * limitations under the License.
  */
 #include "headset_wakeup_engine_impl.h"
+#include "idevmgr_hdi.h"
 #include "audio_system_manager.h"
 #include "adapter_callback_service.h"
 #include "intell_voice_log.h"
 #include "history_info_mgr.h"
 #include "intell_voice_util.h"
+#include "intell_voice_definitions.h"
 #include "intell_voice_engine_manager.h"
 #include "headset_host_manager.h"
 #include "headset_wakeup_wrapper.h"
@@ -28,17 +30,18 @@ using namespace OHOS::HDI::IntelligentVoice::Engine::V1_0;
 using namespace OHOS::IntellVoiceUtils;
 using namespace OHOS::AudioStandard;
 using namespace std;
+using OHOS::HDI::DeviceManager::V1_0::IDeviceManager;
 
 namespace OHOS {
 namespace IntellVoiceEngine {
-static constexpr int64_t RECOGNIZING_TIMEOUT_US = 10 * 1000 * 1000; //10s
-static constexpr int64_t RECOGNIZE_COMPLETE_TIMEOUT_US = 2 * 1000 * 1000; //2s
-static constexpr int64_t READ_CAPTURER_TIMEOUT_US = 10 * 1000 * 1000; //10s
+static constexpr int64_t RECOGNIZING_TIMEOUT_US = 10 * 1000 * 1000; // 10s
+static constexpr int64_t RECOGNIZE_COMPLETE_TIMEOUT_US = 2 * 1000 * 1000; // 2s
+static constexpr int64_t READ_CAPTURER_TIMEOUT_US = 10 * 1000 * 1000; // 10s
 static constexpr uint32_t MAX_HEADSET_TASK_NUM = 200;
 static const std::string HEADSET_THREAD_NAME = "HeadsetThread";
 
-HeadsetWakeupEngineImpl::HeadsetWakeupEngineImpl()
-    : ModuleStates(State(IDLE), "HeadsetWakeupEngineImpl"), TaskExecutor(HEADSET_THREAD_NAME, MAX_HEADSET_TASK_NUM)
+HeadsetWakeupEngineImpl::HeadsetWakeupEngineImpl() : ModuleStates(State(IDLE), "HeadsetWakeupEngineImpl"),
+    TaskExecutor(HEADSET_THREAD_NAME, MAX_HEADSET_TASK_NUM), BaseWakeupEngineImpl()
 {
 }
 
@@ -61,6 +64,7 @@ bool HeadsetWakeupEngineImpl::Init()
     }
 
     TaskExecutor::StartThread();
+    mCloudReporter = std::make_shared<AccessoriesCloudReporter>("headset");
     return true;
 }
 
@@ -114,6 +118,58 @@ int32_t HeadsetWakeupEngineImpl::Handle(const StateMsg &msg)
     }
 
     return ModuleStates::HandleMsg(msg);
+}
+
+bool HeadsetWakeupEngineImpl::Create(std::shared_ptr<StateInfoListener> stateListener)
+{
+    ModuleStates::SetStateListener(stateListener);
+    ModuleStates::SetProcessType(PROCESS_WAKEUP_HEADSET);
+    auto devmgr = IDeviceManager::Get();
+    if (devmgr == nullptr) {
+        INTELL_VOICE_LOG_ERROR("get devmgr failed");
+        return false;
+    }
+    devmgr->UnloadDevice(HEADSET_SERVICE_NAME);
+    devmgr->LoadDevice(HEADSET_SERVICE_NAME);
+    if (!HeadsetHostManager::GetInstance().Init()) {
+        INTELL_VOICE_LOG_ERROR("init headset host failed");
+        return false;
+    }
+    HeadsetHostManager::GetInstance().RegisterEngineHDIDeathRecipient();
+    return Init();
+}
+
+bool HeadsetWakeupEngineImpl::Destroy()
+{
+    StateMsg msg(RELEASE);
+    if (Handle(msg) != 0) {
+        INTELL_VOICE_LOG_ERROR("release headset wakeup engine impl failed");
+    }
+    HeadsetHostManager::GetInstance().DeregisterEngineHDIDeathRecipient();
+    auto devmgr = IDeviceManager::Get();
+    if (devmgr == nullptr) {
+        INTELL_VOICE_LOG_ERROR("get devmgr failed");
+        return false;
+    }
+    devmgr->UnloadDevice(HEADSET_SERVICE_NAME);
+    return true;
+}
+
+void HeadsetWakeupEngineImpl::OnTriggerDetected(int32_t /* uuid */,
+    const std::shared_ptr<WakeupDeviceDetail>& wakeupDevice, const EventDetail &event)
+{
+    std::thread([macAddress = wakeupDevice->macAddress,
+        parameters = wakeupDevice->parameters, endIndex = event.endFrameIndex]() {
+            IntellVoiceUtil::StartAbilityOnDetected("headset_event", macAddress, parameters, endIndex);
+        }).detach();
+    if (mCloudReporter) {
+        mCloudReporter->Init();
+        mCloudReporter->SetEndIndex(event.endFrameIndex);
+    }
+    StateMsg msg(START_RECOGNIZE);
+    if (Handle(msg) != 0) {
+        INTELL_VOICE_LOG_WARN("start failed");
+    }
 }
 
 bool HeadsetWakeupEngineImpl::SetCallbackInner()
@@ -190,7 +246,7 @@ void HeadsetWakeupEngineImpl::OnWakeupRecognition(int32_t result, const std::str
     Handle(msg);
 }
 
-int32_t HeadsetWakeupEngineImpl::HandleInit(const StateMsg & /* msg */, State &nextState)
+int32_t HeadsetWakeupEngineImpl::HandleInit(const StateMsg &msg, State &nextState)
 {
     INTELL_VOICE_LOG_INFO("enter");
     if (!EngineUtil::CreateAdapterInner(HeadsetHostManager::GetInstance(), WAKEUP_ADAPTER_TYPE)) {
@@ -206,6 +262,10 @@ int32_t HeadsetWakeupEngineImpl::HandleInit(const StateMsg & /* msg */, State &n
     EngineUtil::SetLanguage();
     EngineUtil::SetArea();
     adapter_->SetParameter("model_path=/vendor/etc/audio/encoder.om");
+    std::string *msgBody = reinterpret_cast<std::string *>(msg.inMsg);
+    if (msgBody != nullptr) {
+        adapter_->SetParameter("modelType=" + *msgBody);
+    }
     IntellVoiceEngineInfo info = {};
 
     if (AttachInner(info) != 0) {
@@ -245,6 +305,11 @@ int32_t HeadsetWakeupEngineImpl::HandleSetListener(const StateMsg &msg, State & 
 int32_t HeadsetWakeupEngineImpl::HandleStart(const StateMsg & /* msg */, State &nextState)
 {
     INTELL_VOICE_LOG_INFO("enter");
+    if (!needSecondStageWakeup) {
+        INTELL_VOICE_LOG_INFO("no need to recognize");
+        nextState = State(RECOGNIZED);
+        return 0;
+    }
     if (adapter_ == nullptr) {
         INTELL_VOICE_LOG_ERROR("adapter is nullptr");
         return -1;
@@ -291,6 +356,9 @@ void HeadsetWakeupEngineImpl::ReadThread()
             isEnd = true;
             adapter_->SetParameter("end_of_pcm=true");
         }
+        if (mCloudReporter) {
+            mCloudReporter->WriteStream({ audioStream });
+        }
         WakeupSourceProcess::Write({ audioStream });
     }
 }
@@ -298,6 +366,7 @@ void HeadsetWakeupEngineImpl::ReadThread()
 bool HeadsetWakeupEngineImpl::StartAudioSource()
 {
     INTELL_VOICE_LOG_INFO("enter");
+
     isReading_.store(true);
 
     WakeupSourceProcess::Init(1);
@@ -317,6 +386,15 @@ void HeadsetWakeupEngineImpl::StopAudioSource()
     readThread_.join();
     HeadsetWakeupWrapper::GetInstance().StopReadingStream();
     WakeupSourceProcess::Release();
+    if (!mCloudReporter) {
+        return;
+    }
+    if (mCloudReporter->CreateReportDir()) {
+        (void)mCloudReporter->SavePcm();
+        if (!mCloudReporter->SetReportInfo()) {
+            INTELL_VOICE_LOG_ERROR("SetReportInfo fail");
+        }
+    }
 }
 
 int32_t HeadsetWakeupEngineImpl::HandleStop(const StateMsg & /* msg */, State &nextState)
@@ -406,6 +484,7 @@ int32_t HeadsetWakeupEngineImpl::HandleResetAdapter(const StateMsg & /* msg */, 
     adapter_->SetCallback(callback_);
     EngineUtil::SetLanguage();
     EngineUtil::SetArea();
+    adapter_->SetParameter("model_path=/vendor/etc/audio/encoder.om");
 
     IntellVoiceEngineAdapterInfo adapterInfo = {
     };

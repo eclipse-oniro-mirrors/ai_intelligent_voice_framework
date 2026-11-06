@@ -17,7 +17,7 @@
 #define I_INTELL_VOICE_UPDATE_CALLBACK_H
 
 #include "iremote_broker.h"
-#include "v1_0/intell_voice_engine_types.h"
+#include "v1_3/intell_voice_engine_types.h"
 
 namespace OHOS {
 namespace IntellVoice {

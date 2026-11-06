@@ -33,7 +33,7 @@ namespace IntellVoiceTrigger {
 
 TriggerManagerTest::TriggerManagerTest()
 {
-    triggerManager_ = std::shared_ptr<TriggerManager>(new (std::nothrow) TriggerManager());
+    triggerManager_ = std::make_shared<TriggerManager>();
     if (triggerManager_ == nullptr) {
         return;
     }

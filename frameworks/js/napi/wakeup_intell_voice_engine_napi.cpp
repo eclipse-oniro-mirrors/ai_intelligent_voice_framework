@@ -272,6 +272,11 @@ napi_value WakeupIntellVoiceEngineNapi::SetParameter(napi_env env, napi_callback
         execute = [](napi_env env, void *data) {
             CHECK_CONDITION_RETURN_VOID((data == nullptr), "data is nullptr");
             auto asyncContext = static_cast<SetParameterContext *>(data);
+            if (asyncContext->instanceNapi_ == nullptr) {
+                INTELL_VOICE_LOG_ERROR("instanceNapi_ is nullptr");
+                asyncContext->result_ = NAPI_INTELLIGENT_VOICE_INVALID_PARAM;
+                return;
+            }
             auto engine = reinterpret_cast<WakeupIntellVoiceEngineNapi *>(asyncContext->instanceNapi_)->engine_;
             CHECK_CONDITION_RETURN_VOID((engine == nullptr), "get engine instance failed");
             engine->SetParameter(asyncContext->key, asyncContext->value);

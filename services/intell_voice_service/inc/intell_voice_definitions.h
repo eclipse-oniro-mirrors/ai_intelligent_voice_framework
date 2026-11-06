@@ -23,6 +23,7 @@ constexpr int32_t PROXIMAL_WAKEUP_MODEL_UUID = 2;
 const std::string WAKEUP_KEY = "intell_voice_trigger_enabled";
 const std::string WHISPER_KEY = "intell_voice_trigger_whisper";
 const std::string SHORTWORD_KEY = "intell_voice_trigger_shortword";
+const std::string DUALMIC_KEY = "dualmic_intell_voice_trigger_enabled";
 const std::string SENSIBILITY_TEXT = "sensibility=";
 
 const std::string KEY_GET_WAKEUP_FEATURE = "wakeup_features";
@@ -34,6 +35,11 @@ const std::string KEY_ENROLL_ENGINE_UID = "EnrollEngineUid";
 const std::string KEY_SENSIBILITY = "Sensibility";
 const std::string KEY_WAKEUP_DSP_FEATURE = "WakeupDspFeature";
 const std::string KEY_WHISPER_VPR = "WhisperVpr";
+const std::string KEY_DUALMIC_ENABLE = "dualMicEnable";
+
+const std::string HEADSET_SERVICE_NAME = "tws_kws_service";
+const std::string DEFAULT_MAC_ADDRESS = "default_mac_address_phone";
+const std::string DEFAULT_SERVICE_NAME = "default_service_name_phone";
 
 static const std::string WHISPER_MODEL_PATH_VDE =
     "/sys_prod/variant/region_comm/china/etc/intellvoice/wakeup/dsp/whisper_wakeup_dsp_config_vde";
@@ -47,8 +53,25 @@ static const std::string WAKEUP_CONFIG_USER_PATH =
     "/sys_prod/variant/region_comm/china/etc/intellvoice/wakeup/ap/wakeup_config_user.json";
 static const std::string WAKEUP_CONFIG_PATH =
     "/sys_prod/variant/region_comm/china/etc/intellvoice/wakeup/ap/wakeup_config.json";
-static const std::string SINGLE_LEVEL_MODEL_PATH =
+#ifdef ONLY_FIRST_STAGE
+static const std::string SINGLE_LEVEL_MODEL_CN_PATH =
     "/sys_prod/variant/region_comm/china/etc/intellvoice/wakeup/dsp/wakeup_dsp_config";
+static const std::string SINGLE_LEVEL_MODEL_GB_PATH =
+    "/sys_prod/variant/region_comm/oversea/etc/intellvoice/wakeup/dsp/gb_wakeup_dsp_config";
+static const std::string SINGLE_LEVEL_MODEL_AE_PATH =
+    "/sys_prod/variant/region_comm/oversea/etc/intellvoice/wakeup/dsp/ae_wakeup_dsp_config";
+static const std::string SINGLE_LEVEL_MODEL_MY_PATH =
+    "/sys_prod/variant/region_comm/oversea/etc/intellvoice/wakeup/dsp/my_wakeup_dsp_config";
+static const std::string SINGLE_LEVEL_MODEL_MX_PATH =
+    "/sys_prod/variant/region_comm/oversea/etc/intellvoice/wakeup/dsp/mx_wakeup_dsp_config";
+static const std::string SINGLE_LEVEL_MODEL_SA_PATH =
+    "/sys_prod/variant/region_comm/oversea/etc/intellvoice/wakeup/dsp/sa_wakeup_dsp_config";
+static const std::string SINGLE_LEVEL_MODEL_CL_PATH =
+    "/sys_prod/variant/region_comm/oversea/etc/intellvoice/wakeup/dsp/cl_wakeup_dsp_config";
+#endif
+static const std::string WAKEUP_FILE_PATH_PREFIX =
+    "/data/service/el0/intelligent_voice/wakeup";
+static const std::string PARENT_PATH_PREFIX = "../";
 }  // namespace IntellVoice
 namespace IntellVoiceTrigger {
     enum TriggerModelType {

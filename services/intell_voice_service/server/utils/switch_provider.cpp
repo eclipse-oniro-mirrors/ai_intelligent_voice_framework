@@ -25,7 +25,8 @@ namespace OHOS {
 namespace IntellVoiceEngine {
 const std::string SWITCH_URI_PROXY = "datashare:///com.ohos.settingsdata/entry/settingsdata/SETTINGSDATA?Proxy=true";
 const std::string SWITCH_DATA_EXT_URI = "datashare:///com.ohos.settingsdata.DataAbility";
-
+const std::string WAKEUP_REASON_KEY = "intell_voice_switch_record";
+const std::string WHISPER_REASON_KEY = "intell_whisper_switch_record";
 namespace {
 Uri AssembleUri(const std::string& key)
 {
@@ -78,13 +79,9 @@ void SwitchProvider::UnregisterObserver(const sptr<SwitchObserver> &observer, co
 
 bool SwitchProvider::QuerySwitchStatus(const std::string &key)
 {
-    std::vector<std::string> columns = {"VALUE"};
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo("KEYWORD", key);
-    auto uri = AssembleUri(key);
-    auto resultSet = helper_->Query(uri, predicates, columns);
+    auto resultSet = QueryWithRetry(key);
     if (resultSet == nullptr) {
-        INTELL_VOICE_LOG_ERROR("helper->Query return nullptr");
+        INTELL_VOICE_LOG_WARN("resultSet is null, key is %{public}s", key.c_str());
         return false;
     }
 
@@ -110,13 +107,47 @@ bool SwitchProvider::QuerySwitchStatus(const std::string &key)
     }
 }
 
+void SwitchProvider::QueryAndLogReason()
+{
+    if (helper_ == nullptr) {
+        INTELL_VOICE_LOG_ERROR("helper_ is nullptr");
+        return;
+    }
+    std::vector<std::string> columns = {"VALUE"};
+    const std::vector<std::pair<std::string, std::string>> queries = {
+        {WAKEUP_REASON_KEY, "wakeup"},
+        {WHISPER_REASON_KEY, "whisper"}
+    };
+
+    for (const auto& [key, logName] : queries) {
+        DataShare::DataSharePredicates pred;
+        pred.EqualTo("KEYWORD", key);
+        auto uri = AssembleUri(key);
+        auto resultSet = helper_->Query(uri, pred, columns);
+        if (resultSet == nullptr) {
+            INTELL_VOICE_LOG_WARN("Failed to query reason for %{public}s key", logName.c_str());
+            continue;
+        }
+        
+        int32_t count = 0;
+        resultSet->GetRowCount(count);
+        if (count == 0) {
+            INTELL_VOICE_LOG_INFO("No reason record found for %{public}s key", logName.c_str());
+        } else {
+            const int32_t INDEX = 0;
+            resultSet->GoToRow(INDEX);
+            std::string reason;
+            resultSet->GetString(INDEX, reason);
+            INTELL_VOICE_LOG_WARN("Switch reason for %{public}s key: %{public}s",
+                                 logName.c_str(), reason.c_str());
+        }
+        resultSet->Close();
+    }
+}
+
 bool SwitchProvider::IsSwitchError(const std::string &key)
 {
-    std::vector<std::string> columns = {"VALUE"};
-    DataShare::DataSharePredicates predicates;
-    predicates.EqualTo("KEYWORD", key);
-    auto uri = AssembleUri(key);
-    auto resultSet = helper_->Query(uri, predicates, columns);
+    auto resultSet = QueryWithRetry(key);
     if (resultSet == nullptr) {
         INTELL_VOICE_LOG_ERROR("resultSet is nullptr");
         return true;
@@ -131,6 +162,36 @@ bool SwitchProvider::IsSwitchError(const std::string &key)
     }
 
     return false;
+}
+
+std::shared_ptr<DataShare::DataShareResultSet> SwitchProvider::QueryWithRetry(const std::string &key)
+{
+    std::vector<std::string> columns = {"VALUE"};
+    DataShare::DataSharePredicates predicates;
+    predicates.EqualTo("KEYWORD", key);
+    auto uri = AssembleUri(key);
+    std::shared_ptr<DataShare::DatashareBusinessError> error = std::make_shared<DataShare::DatashareBusinessError>();
+    auto resultSet = helper_->Query(uri, predicates, columns, error.get());
+    if (resultSet != nullptr || error->GetCode() != DataShare::E_RESULTSET_BUSY) {
+        return resultSet;
+    }
+    INTELL_VOICE_LOG_WARN("db query busy, retry...");
+    auto saManager = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (saManager == nullptr) {
+        INTELL_VOICE_LOG_ERROR("saManager is nullptr");
+        return nullptr;
+    }
+    auto remoteObj = saManager->GetSystemAbility(INTELL_VOICE_SERVICE_ID);
+    if (remoteObj == nullptr) {
+        INTELL_VOICE_LOG_ERROR("remoteObj is nullptr");
+        return nullptr;
+    }
+    auto retryHelper = DataShare::DataShareHelper::Creator(remoteObj, SWITCH_DATA_EXT_URI, "");
+    if (retryHelper == nullptr) {
+        INTELL_VOICE_LOG_ERROR("retryHelper is nullptr");
+        return nullptr;
+    }
+    return retryHelper->Query(uri, predicates, columns);
 }
 
 bool SwitchProvider::CheckIfDataShareReady()

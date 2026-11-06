@@ -19,6 +19,7 @@
 #include "scope_guard.h"
 #include "update_engine_utils.h"
 #include "intell_voice_util.h"
+#include "engine_offline_audio_processor.h"
 
 #define LOG_TAG "SilenceUpdateStrategy"
 
@@ -27,6 +28,7 @@ using namespace OHOS::IntellVoiceUtils;
 namespace OHOS {
 namespace IntellVoiceEngine {
 static constexpr int32_t SILENCE_UPDATE_RETRY_TIMES = 5;
+static const std::string PCM_PREFIX = "/data/service/el0/intelligent_voice/wakeup/enrollAudioBackup/";
 
 SilenceUpdateStrategy::SilenceUpdateStrategy(const std::string &param): IUpdateStrategy(param)
 {
@@ -54,9 +56,29 @@ int SilenceUpdateStrategy::GetRetryTimes()
 int SilenceUpdateStrategy::OnUpdateCompleteCallback(const int result, bool isLast)
 {
     if (!isLast || result == 0) {
+        bool tse_support = IntellVoiceUtil::GetSupportAbility(ABILITY_TSE);
+        if (tse_support) {
+            // Create processor instance
+            auto processor = std::make_shared<IntelligentVoice::Engine::IntellVoiceEngine::OfflineAudioProcessor>();
+            INTELL_VOICE_LOG_INFO("GetSupportAbility_tse_support: true, audio_asr_tse_reg_enter");
+            std::string fPath1 = PCM_PREFIX + "enroll_1.pcm";
+            std::string fPath2 = PCM_PREFIX + "enroll_2.pcm";
+            std::string fPath3 = PCM_PREFIX + "enroll_3.pcm";
+            std::string fPath4 = PCM_PREFIX + "enroll_phrase.txt";
+            std::thread t([processor, fPath1, fPath2, fPath3, fPath4]() {
+                processor->ProcessOfflineAudioWhile(fPath1, fPath2, fPath3, fPath4);
+            });
+            t.join();
+        } else {
+            INTELL_VOICE_LOG_INFO("GetSupportAbility_tse_support: false");
+        }
         return 0;
     }
 
+    if (result == UPDATE_STATE_CONCURRENT) {
+        INTELL_VOICE_LOG_INFO("update engine conrrent");
+        return 0;
+    }
     INTELL_VOICE_LOG_INFO("notify silence update fail");
     IntellVoiceUtil::StartAbility("update_event");
     return  0;

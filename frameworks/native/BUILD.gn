@@ -42,7 +42,17 @@ ohos_shared_library("intellvoice_native") {
     "-Wno-error=unused-parameter",
     "-DHILOG_ENABLE",
     "-DENABLE_DEBUG",
+    "-Oz",
+    "-flto",
   ]
+
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    cfi_vcall_icall_only = true
+    debug = false
+  }
+  branch_protector_ret = "pac_ret"
 
   deps = [ "../../services:intell_voice_proxy" ]
 
@@ -53,8 +63,10 @@ ohos_shared_library("intellvoice_native") {
     "drivers_interface_intelligent_voice:libintell_voice_engine_proxy_1.0",
     "drivers_interface_intelligent_voice:libintell_voice_engine_proxy_1.1",
     "drivers_interface_intelligent_voice:libintell_voice_engine_proxy_1.2",
+    "drivers_interface_intelligent_voice:libintell_voice_engine_proxy_1.3",
     "hilog:libhilog",
     "ipc:ipc_core",
+    "jsoncpp:jsoncpp",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]

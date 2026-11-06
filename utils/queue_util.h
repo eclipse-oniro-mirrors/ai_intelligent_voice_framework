@@ -110,6 +110,18 @@ public:
         notFullCv_.notify_one();
         return true;
     }
+    bool PopLen(uint32_t maxLen, std::vector<T> &list)
+    {
+        std::unique_lock<std::mutex> lock(queueMutex_);
+        CHECK_CONDITION_RETURN_FALSE(!IsAvailable(), "queue is not available");
+        uint32_t count = 0;
+        while (!queue_.empty() && count < maxLen) {
+            list.push_back(std::move(queue_.front()));
+            queue_.pop();
+            count++;
+        }
+        return true;
+    }
     void Uninit()
     {
         {

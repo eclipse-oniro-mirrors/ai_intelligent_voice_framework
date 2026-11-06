@@ -20,6 +20,7 @@
 #include "string_util.h"
 #include "history_info_mgr.h"
 #include "intell_voice_definitions.h"
+#include "engine_host_manager.h"
 
 #define LOG_TAG "UpdateEngineUtils"
 
@@ -98,6 +99,25 @@ void UpdateEngineUtils::SaveWakeupVesion()
     historyInfoMgr.SetStringKVPair(KEY_WAKEUP_VESRION, versionNumber);
 }
 
+bool UpdateEngineUtils::IsBackupSourceExist()
+{
+    std::vector<std::string> cloneFiles;
+    int32_t ret = EngineHostManager::GetInstance().GetWakeupSourceFilesList(cloneFiles);
+    if (ret != 0) {
+        INTELL_VOICE_LOG_ERROR("GetWakeupSourceFilesList failed, ret: %{public}d", ret);
+        return false;
+    }
+
+    bool found = false;
+    for (const auto& file : cloneFiles) {
+        if (file.find("enroll_phrase.txt") != std::string::npos) {
+            found = true;
+            break;
+        }
+    }
+    return found;
+}
+
 bool UpdateEngineUtils::IsVersionUpdate()
 {
     std::string versionNumberSave;
@@ -121,6 +141,11 @@ bool UpdateEngineUtils::IsVersionUpdate()
     if ((!StringUtil::StringToInt(versionNumberSave, historyVersion)) ||
         (!StringUtil::StringToInt(versionNumberCur, curVersion))) {
         INTELL_VOICE_LOG_ERROR("failed to get version");
+        return false;
+    }
+
+    if (!IsBackupSourceExist()) {
+        INTELL_VOICE_LOG_ERROR("backup audio not found");
         return false;
     }
 

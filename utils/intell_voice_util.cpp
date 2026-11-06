@@ -31,6 +31,7 @@
 #include "intell_voice_info.h"
 #include "ability_manager_client.h"
 #include "history_info_mgr.h"
+#include "json/json.h"
 
 #define LOG_TAG "IntellVoiceUtil"
 
@@ -219,6 +220,115 @@ void IntellVoiceUtil::StartAbility(const std::string &event)
     want.SetParam("serviceName", std::string("intell_voice"));
     want.SetParam("servicePid", getpid());
     want.SetParam("eventType", event);
+    auto abilityManagerClient = AAFwk::AbilityManagerClient::GetInstance();
+    if (abilityManagerClient == nullptr) {
+        INTELL_VOICE_LOG_ERROR("abilityManagerClient is nullptr");
+        return;
+    }
+    abilityManagerClient->StartAbility(want);
+}
+
+void IntellVoiceUtil::StartAbilityOnDetected(const std::string &event, const std::string &macAddress,
+    const std::string &parameters, int32_t endFrameIndex)
+{
+    AAFwk::Want want;
+    HistoryInfoMgr &historyInfoMgr = HistoryInfoMgr::GetInstance();
+ 
+    std::string bundleName = historyInfoMgr.GetStringKVPair(KEY_WAKEUP_ENGINE_BUNDLE_NAME);
+    std::string abilityName = historyInfoMgr.GetStringKVPair(KEY_WAKEUP_ENGINE_ABILITY_NAME);
+    INTELL_VOICE_LOG_INFO("bundleName:%{public}s, abilityName:%{public}s, endFrameIndex:%{public}d",
+        bundleName.c_str(), abilityName.c_str(), endFrameIndex);
+    if (bundleName.empty() || abilityName.empty()) {
+        INTELL_VOICE_LOG_ERROR("bundle name is empty or ability name is empty");
+        return;
+    }
+    want.SetElementName(bundleName, abilityName);
+    want.SetParam("serviceName", std::string("intell_voice"));
+    want.SetParam("servicePid", getpid());
+    want.SetParam("eventType", event);
+    if (event == "headset_event") {
+        want.SetParam("supportOneShot", true);
+    }
+    want.SetParam("macAddress", macAddress);
+    want.SetParam("endFrameIndex", endFrameIndex);
+    want.SetParam("deviceParam", parameters);
+    auto abilityManagerClient = AAFwk::AbilityManagerClient::GetInstance();
+    if (abilityManagerClient == nullptr) {
+        INTELL_VOICE_LOG_ERROR("abilityManagerClient is nullptr");
+        return;
+    }
+    abilityManagerClient->StartAbility(want);
+}
+
+
+bool IntellVoiceUtil::IsImplicitEnroll(const std::string &param)
+{
+    std::istringstream jsonStrm(param);
+    Json::CharReaderBuilder reader;
+    Json::Value root;
+    std::string errs;
+
+    reader["collectComments"] = false;
+    if (!parseFromStream(reader, jsonStrm, &root, &errs)) {
+        INTELL_VOICE_LOG_ERROR("input str is not json");
+        return false;
+    }
+    if (root.isMember("implicit_enroll") && root["implicit_enroll"].asString() == "true") {
+        INTELL_VOICE_LOG_INFO("implicit enroll");
+        return true;
+    }
+    return false;
+}
+
+bool IntellVoiceUtil::GetSupportAbility(const std::string& ability)
+{
+    std::ifstream jsonStrm(WAKEUP_CONFIG_PATH);
+    if (!jsonStrm.is_open()) {
+        INTELL_VOICE_LOG_ERROR("open file fail!");
+        return false;
+    }
+    Json::Value wakeupJson;
+    Json::CharReaderBuilder reader;
+    reader["collectComments"] = false;
+    std::string errs;
+    if (!parseFromStream(reader, jsonStrm, &wakeupJson, &errs)) {
+        INTELL_VOICE_LOG_ERROR("parseFromStream json fail!");
+        return false;
+    }
+    if (!wakeupJson.isMember("Features")) {
+        INTELL_VOICE_LOG_WARN("no features param");
+        return false;
+    }
+    Json::Value features = wakeupJson["Features"];
+    if (!features.isArray() || features.empty()) {
+        INTELL_VOICE_LOG_WARN("features is not array or empty");
+        return false;
+    }
+    for (const auto& feature : features) {
+        if (feature.isString() && feature.asString() == ability) {
+            return true;
+        }
+    }
+    return false;
+}
+
+void IntellVoiceUtil::SendCommonEvent(const std::string &event)
+{
+    AAFwk::Want want;
+    HistoryInfoMgr &historyInfoMgr = HistoryInfoMgr::GetInstance();
+ 
+    std::string bundleName = historyInfoMgr.GetStringKVPair(KEY_WAKEUP_ENGINE_BUNDLE_NAME);
+    std::string abilityName = historyInfoMgr.GetStringKVPair(KEY_WAKEUP_ENGINE_ABILITY_NAME);
+    INTELL_VOICE_LOG_INFO("bundleName:%{public}s, abilityName:%{public}s", bundleName.c_str(), abilityName.c_str());
+    if (bundleName.empty() || abilityName.empty()) {
+        INTELL_VOICE_LOG_ERROR("bundle name is empty or ability name is empty");
+        return;
+    }
+    want.SetElementName(bundleName, abilityName);
+    want.SetParam("serviceName", std::string("intell_voice"));
+    want.SetParam("servicePid", getpid());
+    want.SetParam("eventType", std::string("commonEvent"));
+    want.SetParam("eventMsg", event);
     auto abilityManagerClient = AAFwk::AbilityManagerClient::GetInstance();
     if (abilityManagerClient == nullptr) {
         INTELL_VOICE_LOG_ERROR("abilityManagerClient is nullptr");

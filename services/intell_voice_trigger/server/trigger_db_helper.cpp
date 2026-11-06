@@ -29,7 +29,7 @@ using namespace OHOS::NativeRdb;
 
 namespace OHOS {
 namespace IntellVoiceTrigger {
-enum {
+enum TriggerDbVersion {
     VERSION_ADD_MODEL_TYPE = 2,
 };
 static const std::string TABLE_NAME = "trigger";
@@ -120,6 +120,10 @@ bool TriggerDbHelper::UpdateGenericTriggerModel(std::shared_ptr<GenericTriggerMo
     if (ret != E_OK) {
         INTELL_VOICE_LOG_ERROR("update generic model failed");
         return false;
+    }
+    ret = store_->ExecuteSql("PRAGMA wal_checkpoint(TRUNCATE)");
+    if (ret != E_OK) {
+        INTELL_VOICE_LOG_WARN("reduce db_wal file size failed, ret:%{public}d", ret);
     }
     return true;
 }
@@ -260,6 +264,10 @@ void TriggerDbHelper::DeleteGenericTriggerModel(const int32_t modelUuid)
     }
     int deletedRows;
     store_->Delete(deletedRows, "trigger", "model_uuid = ?", std::vector<std::string> {std::to_string(modelUuid)});
+    int result = store_->ExecuteSql("PRAGMA wal_checkpoint(TRUNCATE)");
+    if (result != E_OK) {
+        INTELL_VOICE_LOG_WARN("reduce db_wal file size failed, ret:%{public}d", result);
+    }
 }
 }  // namespace IntellVoiceTrigger
 }  // namespace OHOS

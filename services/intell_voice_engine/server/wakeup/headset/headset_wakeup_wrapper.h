@@ -43,8 +43,6 @@ public:
     int32_t ReadHeadsetStream(std::vector<uint8_t> &audioStream, bool &hasAwakeWord);
     int32_t NotifyVerifyResult(bool result);
     int32_t StopReadingStream();
-    int32_t GetHeadsetAwakeState();
-    void NotifyHeadsetHdfDeath();
 
 private:
     int32_t LoadHeadsetLib();
@@ -52,6 +50,7 @@ private:
 
 private:
     std::mutex mutex_ {};
+    std::mutex notifyMutex_ {};
     HeadsetWakeupManagerPriv headsetWakeupPriv_;
     IHeadsetWakeup *inst_ = nullptr;
 };

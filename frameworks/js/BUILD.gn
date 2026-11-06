@@ -55,6 +55,15 @@ ohos_shared_library("intelligentvoice") {
     "-DENABLE_DEBUG",
   ]
 
+  sanitize = {
+    cfi = true
+    cfi_cross_dso = true
+    cfi_vcall_icall_only = true
+    debug = false
+  }
+
+  branch_protector_ret = "pac_ret"
+
   deps = [
     "../../frameworks/native:intellvoice_native",
     "../../services:intell_voice_proxy",
@@ -71,6 +80,8 @@ ohos_shared_library("intelligentvoice") {
     "hilog:libhilog",
     "ipc:ipc_core",
     "napi:ace_napi",
+    "node:node_header_notice",
+    "libuv:uv",
     "safwk:system_ability_fwk",
     "samgr:samgr_proxy",
   ]

@@ -49,7 +49,8 @@ void HighPowerAdapterListener::SetCallback(const sptr<IIntelligentVoiceEngineCal
     if (historyEvent_ != nullptr) {
         uint64_t rightnow = TimeUtil::GetCurrentTimeMs();
         cb_->OnIntellVoiceEngineEvent(*(historyEvent_.get()));
-        INTELL_VOICE_LOG_WARN("callback delayed %lu ms", rightnow - historyMsgTime_);
+        INTELL_VOICE_LOG_WARN("callback delayed %{public}llu ms",
+            static_cast<unsigned long long>(rightnow - historyMsgTime_));
         historyEvent_ = nullptr;
     }
 }

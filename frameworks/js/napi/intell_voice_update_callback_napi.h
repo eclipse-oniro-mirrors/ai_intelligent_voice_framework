@@ -50,6 +50,7 @@ public:
     void ClearAsyncWork(bool error, const std::string &msg);
 
 private:
+    OHOS::IntellVoice::EnrollResult ToResultEnum(const int result);
     void OnJsCallBack(UpdateAsyncContext *context);
     static void UvWorkCallBack(uv_work_t *work, int status);
 

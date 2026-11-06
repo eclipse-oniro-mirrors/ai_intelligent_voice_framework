@@ -23,8 +23,10 @@ namespace OHOS {
 namespace IntellVoiceEngine {
 static constexpr uint32_t WAIT_TIME = 1000;  // 1000ms
 static constexpr uint32_t CHANNEL_CNT_1 = 1;
+static constexpr uint32_t CHANNEL_CNT_2 = 2;
 static constexpr uint32_t CHANNEL_CNT_4 = 4;
 static constexpr uint32_t MAX_CHANNEL_CNT = 4;
+static constexpr uint32_t FRAME_CNT = 100;
 static const std::string WRITE_SOURCE = "_write_source";
 static const std::string READ_SOURCE = "_read_source";
 
@@ -127,17 +129,55 @@ bool WakeupSourceProcess::ReadChannelData(std::vector<uint8_t> &channelData, uin
         INTELL_VOICE_LOG_ERROR("no buffer queue, channel id:%{public}d", channelId);
         return false;
     }
-
-    std::unique_ptr<Uint8ArrayBuffer> arrayBuffer = nullptr;
-    bufferQueue_[channelId]->PopUntilTimeout(WAIT_TIME, arrayBuffer);
-    if (arrayBuffer == nullptr) {
-        INTELL_VOICE_LOG_ERROR("failed to pop data");
-        return false;
+    if (readBufferPCM) {
+        ReadBufferedData(channelData, channelId);
+        readBufferPCM = false;
+    } else {
+        std::unique_ptr<Uint8ArrayBuffer> arrayBuffer = nullptr;
+        bufferQueue_[channelId]->PopUntilTimeout(WAIT_TIME, arrayBuffer);
+        if (arrayBuffer == nullptr) {
+            INTELL_VOICE_LOG_ERROR("failed to pop data");
+            return false;
+        }
+        channelData.insert(channelData.end(), arrayBuffer->GetData(), arrayBuffer->GetData() + arrayBuffer->GetSize());
     }
 
-    channelData.insert(channelData.end(), arrayBuffer->GetData(), arrayBuffer->GetData() + arrayBuffer->GetSize());
     WriteDebugData(readDebug_, channelData, channelId);
     return true;
+}
+
+void WakeupSourceProcess::ReadBufferedData(std::vector<uint8_t> &channelData, uint32_t channelId)
+{
+    int frameLen = FRAME_CNT;
+    if (channelId != CHANNEL_ID_0) {
+        // channel-0
+        frameLen = AddMultiFrame(channelData, CHANNEL_ID_0, frameLen);
+        // channel-n, frameLen - keep same length with channel-0 data
+        AddMultiFrame(channelData, channelId, frameLen);
+        INTELL_VOICE_LOG_INFO("readed channel 0 and : %{public}d", channelId);
+    } else {
+        AddMultiFrame(channelData, channelId, frameLen);
+        channelData.reserve(channelData.size() * CHANNEL_CNT_2);
+        channelData.insert(channelData.end(), channelData.begin(), channelData.end());
+    }
+    INTELL_VOICE_LOG_INFO("readed buffered length: %{public}d", frameLen);
+}
+
+int WakeupSourceProcess::AddMultiFrame(std::vector<uint8_t> &channelData, uint32_t channelId, int frameLen)
+{
+    std::vector<std::unique_ptr<Uint8ArrayBuffer>> frameList;
+    frameList.reserve(frameLen);
+    bufferQueue_[channelId]->PopLen(frameLen, frameList);
+    if (frameList.empty()) {
+        return 0;
+    }
+    int len = frameList.size() * (frameList[0]->GetSize());
+    channelData.reserve(channelData.size() + len);
+    for (uint32_t i = 0; i < frameList.size(); i++) {
+        channelData.insert(
+            channelData.end(), frameList[i]->GetData(), frameList[i]->GetData() + frameList[i]->GetSize());
+    }
+    return frameList.size();
 }
 
 void WakeupSourceProcess::InitDebugFile(uint32_t channelCnt)

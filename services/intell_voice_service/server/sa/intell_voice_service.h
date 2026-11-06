@@ -21,6 +21,7 @@
 #include "system_ability.h"
 #include "intell_voice_service_stub.h"
 #include "system_event_observer.h"
+#include "i_device_wakeup.h"
 
 namespace OHOS {
 namespace IntellVoiceEngine {
@@ -34,6 +35,7 @@ public:
 
     bool RegisterDeathRecipient(IntellVoiceEngineType type, const sptr<IRemoteObject> &object) override;
     bool DeregisterDeathRecipient(IntellVoiceEngineType type) override;
+    bool RegisterDeviceDeathRecipient(const std::string &serviceName, const sptr<IRemoteObject> &object) override;
 
     int32_t GetUploadFiles(int numMax, std::vector<UploadFilesFromHdi> &files) override;
 
@@ -44,6 +46,8 @@ public:
     int32_t SendWakeupFile(const std::string &filePath, const std::vector<uint8_t> &buffer) override;
     int32_t EnrollWithWakeupFilesForResult(const std::string &wakeupInfo, const sptr<IRemoteObject> object) override;
     int32_t ClearUserData() override;
+    int32_t RegisterDeviceWakeupInfo(const std::string &macAddress, const WakeupDeviceInfo &info) override;
+    int32_t DeregisterDeviceWakeupInfo(const std::string &macAddress) override;
 
     class PerStateChangeCbCustomizeCallback : public Security::AccessToken::PermStateChangeCallbackCustomize {
     public:
@@ -58,6 +62,7 @@ protected:
     void OnStart(const SystemAbilityOnDemandReason &startReason) override;
     void OnStop() override;
     int32_t OnIdle(const SystemAbilityOnDemandReason &idleReason) override;
+    void OnActive(const SystemAbilityOnDemandReason& activeReason) override;
     void OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId) override;
     void OnRemoveSystemAbility(int32_t systemAbilityId, const std::string &deviceId) override;
 
@@ -68,10 +73,12 @@ private:
     void OnDistributedKvDataServiceChange(bool isAdded);
     void InitIntellVoiceService();
     void OnReceiveCes(const OHOS::EventFwk::CommonEventData &data);
+    bool NeedProcOnRemoved(int32_t systemAbilityId);
 
 private:
     int32_t reasonId_ = -1;
     bool isServiceInit_ = false;
+    bool isDataShareRemoved_ = false;
     std::string reasonName_;
     std::string reasonValue_;
     std::mutex initServiceMutex_;

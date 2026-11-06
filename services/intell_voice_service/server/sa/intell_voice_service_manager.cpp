@@ -26,6 +26,7 @@
 #include "memory_guard.h"
 #include "string_util.h"
 #include "history_info_mgr.h"
+#include "wakeup_track.h"
 
 #define LOG_TAG "IntellVoiceServiceManager"
 
@@ -35,9 +36,9 @@ using namespace OHOS::IntellVoiceUtils;
 
 namespace OHOS {
 namespace IntellVoiceEngine {
-static constexpr int32_t WAIT_AUDIO_HAL_INTERVAL = 500; //500ms
+static constexpr int32_t WAIT_INTERVAL = 500; // 500ms
 static constexpr uint32_t MAX_TASK_NUM = 2048;
-static constexpr uint32_t WAIT_SWICTH_ON_TIME = 2000;  // 2000ms
+static constexpr uint32_t WAIT_SWITCH_TIME = 2000;  // 2000ms
 static constexpr uint32_t WAIT_RECORD_START_TIME = 10000; // 10s
 static const std::string STOP_ALL_RECOGNITION = "stop_all_recognition";
 static const std::string SHORT_WORD_SWITCH = "short_word_switch";
@@ -54,6 +55,7 @@ IntellVoiceServiceManager<T, E>::IntellVoiceServiceManager() : TaskExecutor("Ser
 #ifdef USE_FFRT
     taskQueue_ = std::make_shared<ffrt::queue>("ServMgrQueue");
 #endif
+    InitParameterHandlerMap();
 }
 
 template<typename T, typename E>
@@ -80,20 +82,29 @@ void IntellVoiceServiceManager<T, E>::CreateSwitchProvider()
     }
     RegisterObserver(WAKEUP_KEY);
     RegisterObserver(WHISPER_KEY);
-    RegisterObserver(SHORTWORD_KEY);
+    if (IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_SHORT_WORD))
+        RegisterObserver(SHORTWORD_KEY);
+    if (IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_DUAL_MIC))
+        RegisterObserver(DUALMIC_KEY);
+    if (switchProvider_->QuerySwitchStatus(WAKEUP_KEY) || switchProvider_->QuerySwitchStatus(WHISPER_KEY))
+        WakeupTrack::reportWakeupStatus(OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STAGE_SA,
+            OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STATE_OPEN,
+            OHOS::IntellVoiceUtils::WAKEUP_SWITCH_REASON_INIT);
 }
 
 template<typename T, typename E>
 void IntellVoiceServiceManager<T, E>::RegisterObserver(const std::string &switchKey)
 {
-    switchObserver_[switchKey] = sptr<SwitchObserver>(new (std::nothrow) SwitchObserver());
     if (switchObserver_[switchKey] == nullptr) {
-        INTELL_VOICE_LOG_ERROR("switchObserver_ is nullptr");
-        return;
+        switchObserver_[switchKey] = sptr<SwitchObserver>(new (std::nothrow) SwitchObserver());
+        if (switchObserver_[switchKey] == nullptr) {
+            INTELL_VOICE_LOG_ERROR("switchObserver_ is nullptr");
+            return;
+        }
+        switchObserver_[switchKey]->SetUpdateFunc([this, switchKey]() {
+            OnSwitchChange(switchKey);
+        });
     }
-    switchObserver_[switchKey]->SetUpdateFunc([this, switchKey]() {
-        OnSwitchChange(switchKey);
-    });
 
     switchProvider_->RegisterObserver(switchObserver_[switchKey], switchKey);
 }
@@ -170,7 +181,7 @@ bool IntellVoiceServiceManager<T, E>::IsSwitchError(const std::string &key)
         INTELL_VOICE_LOG_ERROR("switchProvider_ is nullptr");
         return true;
     }
- 
+
     return switchProvider_->IsSwitchError(key);
 }
 
@@ -179,21 +190,44 @@ void IntellVoiceServiceManager<T, E>::OnSwitchChange(const std::string &switchKe
 {
     if (switchKey == WAKEUP_KEY) {
         if (QuerySwitchStatus(switchKey)) {
+            if (!QuerySwitchStatus(WHISPER_KEY)) {
+                WakeupTrack::reportWakeupStatus(OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STAGE_SA,
+                    OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STATE_OPEN,
+                    OHOS::IntellVoiceUtils::WAKEUP_SWITCH_REASON_USER_SETTING);
+            }
             NoiftySwitchOnToPowerChange();
             HandleSwitchOn(false, VOICE_WAKEUP_MODEL_UUID, false);
         } else {
+            if (!QuerySwitchStatus(WHISPER_KEY)) {
+                WakeupTrack::reportWakeupStatus(OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STAGE_SA,
+                    OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STATE_CLOSE,
+                    OHOS::IntellVoiceUtils::WAKEUP_SWITCH_REASON_USER_SETTING);
+            }
             HandleSwitchOff(false, VOICE_WAKEUP_MODEL_UUID);
             INTELL_VOICE_LOG_INFO("switch off process finish");
+            HistoryInfoMgr::GetInstance().DeleteKey(TRIGGER_PARAMS);
             HandleUnloadIntellVoiceService(false);
         }
+        switchProvider_->QueryAndLogReason();
     } else if (switchKey == WHISPER_KEY) {
         if (QuerySwitchStatus(switchKey)) {
+            if (!QuerySwitchStatus(WAKEUP_KEY)) {
+                WakeupTrack::reportWakeupStatus(OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STAGE_SA,
+                    OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STATE_OPEN,
+                    OHOS::IntellVoiceUtils::WAKEUP_SWITCH_REASON_USER_SETTING);
+            }
             NoiftySwitchOnToPowerChange();
             HandleSwitchOn(false, PROXIMAL_WAKEUP_MODEL_UUID, false);
         } else {
+            if (!QuerySwitchStatus(WAKEUP_KEY)) {
+                WakeupTrack::reportWakeupStatus(OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STAGE_SA,
+                    OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STATE_CLOSE,
+                    OHOS::IntellVoiceUtils::WAKEUP_SWITCH_REASON_USER_SETTING);
+            }
             HandleSwitchOff(false, PROXIMAL_WAKEUP_MODEL_UUID);
             HandleUnloadIntellVoiceService(false);
         }
+        switchProvider_->QueryAndLogReason();
     } else if (switchKey == SHORTWORD_KEY) {
         TaskExecutor::AddSyncTask([this]() -> int32_t {
             INTELL_VOICE_LOG_INFO("short word switch change");
@@ -209,12 +243,20 @@ void IntellVoiceServiceManager<T, E>::OnSwitchChange(const std::string &switchKe
             StartDetection(PROXIMAL_WAKEUP_MODEL_UUID);
             return 0;
         });
+    } else if (switchKey == DUALMIC_KEY) {
+        TaskExecutor::AddSyncTask([this]() -> int32_t {
+            SetDualMicStatus();
+            return 0;
+        });
     }
 }
 
 template<typename T, typename E>
 void IntellVoiceServiceManager<T, E>::SetShortWordStatus()
 {
+    if (!IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_SHORT_WORD)) {
+        return;
+    }
     INTELL_VOICE_LOG_INFO("enter");
     if (QuerySwitchStatus(SHORTWORD_KEY)) {
         INTELL_VOICE_LOG_INFO("short_word_switch true");
@@ -222,6 +264,24 @@ void IntellVoiceServiceManager<T, E>::SetShortWordStatus()
     } else {
         INTELL_VOICE_LOG_INFO("short_word_switch false");
         T::SetParameter(SHORT_WORD_SWITCH, "0");
+    }
+}
+
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::SetDualMicStatus()
+{
+    if (!IntellVoiceUtils::IntellVoiceUtil::GetSupportAbility(ABILITY_DUAL_MIC)) {
+        return;
+    }
+    INTELL_VOICE_LOG_INFO("enter");
+    if (QuerySwitchStatus(DUALMIC_KEY)) {
+        INTELL_VOICE_LOG_INFO("dual_mic_switch true");
+        E::SubscribeSwingEvent("dualMic");
+        T::SetParameter(KEY_DUALMIC_ENABLE, "true");
+    } else {
+        INTELL_VOICE_LOG_INFO("dual_mic_switch false");
+        E::UnSubscribeSwingEvent("dualMic");
+        T::SetParameter(KEY_DUALMIC_ENABLE, "false");
     }
 }
 
@@ -248,19 +308,35 @@ int32_t IntellVoiceServiceManager<T, E>::ClearUserData()
         E::ClearUserDataInner();
         HistoryInfoMgr::GetInstance().DeleteKey({KEY_WAKEUP_ENGINE_BUNDLE_NAME, KEY_WAKEUP_ENGINE_ABILITY_NAME,
             KEY_WAKEUP_VESRION, KEY_LANGUAGE, KEY_AREA, KEY_WAKEUP_PHRASE, KEY_WHISPER_VPR});
+        HistoryInfoMgr::GetInstance().DeleteKey(TRIGGER_PARAMS);
         return UnloadIntellVoiceService();
     });
+}
+
+template<typename T, typename E>
+int32_t IntellVoiceServiceManager<T, E>::RegisterWakeupDevice(const std::string &macAddress,
+    const WakeupDeviceInfo &info)
+{
+    INTELL_VOICE_LOG_INFO("enter");
+    return E::RegisterWakeupDevice(macAddress, info);
+}
+
+template<typename T, typename E>
+int32_t IntellVoiceServiceManager<T, E>::DeregisterWakeupDevice(const std::string &macAddress)
+{
+    INTELL_VOICE_LOG_INFO("enter");
+    return E::DeregisterWakeupDevice(macAddress);
 }
 
 template<typename T, typename E>
 bool IntellVoiceServiceManager<T, E>::IsNeedToUnloadService()
 {
     if (E::AnyEngineExist({INTELL_VOICE_ENROLL, INTELL_VOICE_UPDATE})) {
-        INTELL_VOICE_LOG_INFO("enroll engine or update engine exist, no need to unload service");
+        INTELL_VOICE_LOG_DEBUG("enroll engine or update engine exist, no need to unload service");
         return false;
     }
     if ((QuerySwitchStatus(WAKEUP_KEY)) || (QuerySwitchStatus(WHISPER_KEY))) {
-        INTELL_VOICE_LOG_INFO("switch is on, no need to unload service");
+        INTELL_VOICE_LOG_DEBUG("switch is on, no need to unload service");
         return false;
     }
 
@@ -274,7 +350,7 @@ int32_t IntellVoiceServiceManager<T, E>::UnloadIntellVoiceService()
     if (!IsNeedToUnloadService()) {
         return 0;
     }
-
+    serviceUnloading_ = true;
     std::thread([]() {
         auto systemAbilityMgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
         if (systemAbilityMgr == nullptr) {
@@ -307,7 +383,11 @@ void IntellVoiceServiceManager<T, E>::HandleUnloadIntellVoiceService(bool isAsyn
 template<typename T, typename E>
 bool IntellVoiceServiceManager<T, E>::HandleOnIdle()
 {
-    return TaskExecutor::AddSyncTask([this]() -> bool { return IsNeedToUnloadService(); });
+    return TaskExecutor::AddSyncTask([this]() -> bool {
+            bool needUnload = IsNeedToUnloadService();
+            serviceUnloading_ = needUnload;
+            return needUnload;
+        });
 }
 
 template<typename T, typename E>
@@ -339,13 +419,16 @@ void IntellVoiceServiceManager<T, E>::HandlePowerSaveModeChange()
             return;
         }
         notifyPowerModeChange_ = true;
-        if (powerModeChangeCv_.wait_for(lock, std::chrono::milliseconds(WAIT_SWICTH_ON_TIME),
+        if (powerModeChangeCv_.wait_for(lock, std::chrono::milliseconds(WAIT_SWITCH_TIME),
             [this] { return ((this->QuerySwitchStatus(WAKEUP_KEY)) || (this->QuerySwitchStatus(WHISPER_KEY))); })) {
             INTELL_VOICE_LOG_INFO("switch is on, do nothing");
             notifyPowerModeChange_ = false;
             return;
         }
         INTELL_VOICE_LOG_WARN("wait time out, switch is off, need to unload service");
+        WakeupTrack::reportWakeupStatus(OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STAGE_SA,
+            OHOS::IntellVoiceUtils::WAKEUP_SWITCH_STATE_CLOSE,
+            OHOS::IntellVoiceUtils::WAKEUP_SWITCH_REASON_POWER_SAVE_MODE);
         notifyPowerModeChange_ = false;
         HandleUnloadIntellVoiceService(true);
     }).detach();
@@ -388,7 +471,7 @@ int32_t IntellVoiceServiceManager<T, E>::ReleaseEngine(IntellVoiceEngineType typ
         return ret;
     }
 
-    if (type != INTELL_VOICE_ENROLL) {
+    if (type != INTELL_VOICE_ENROLL && type != INTELL_VOICE_IMPLICIT_ENROLL) {
         return 0;
     }
 
@@ -408,6 +491,14 @@ int32_t IntellVoiceServiceManager<T, E>::ReleaseEngine(IntellVoiceEngineType typ
         UnloadIntellVoiceService();
     }
 
+    return 0;
+}
+
+template<typename T, typename E>
+int32_t IntellVoiceServiceManager<T, E>::ReleaseImplicitEnrollEngine()
+{
+    INTELL_VOICE_LOG_INFO("enter, release implicit enroll");
+    TaskExecutor::AddAsyncTask([this]() { ReleaseEngine(INTELL_VOICE_IMPLICIT_ENROLL); });
     return 0;
 }
 
@@ -432,6 +523,12 @@ int32_t IntellVoiceServiceManager<T, E>::SwitchOnProc(int32_t uuid, bool needUpd
 template<typename T, typename E>
 void IntellVoiceServiceManager<T, E>::CreateAndStartServiceObject(int32_t uuid, bool needResetAdapter)
 {
+    if (uuid == PROXIMAL_WAKEUP_MODEL_UUID && !IntellVoiceUtil::IsFileExist(WHISPER_MODEL_PATH)) {
+        INTELL_VOICE_LOG_INFO("no whisper model");
+        IntellVoiceUtil::StartAbility("no_whisper");
+        return;
+    }
+
 #ifdef TRIGGER_ENABLE
     if (!T::IsModelExist(uuid)) {
         INTELL_VOICE_LOG_INFO("no model");
@@ -458,6 +555,7 @@ void IntellVoiceServiceManager<T, E>::CreateAndStartServiceObject(int32_t uuid, 
 
     if (uuid == VOICE_WAKEUP_MODEL_UUID) {
         SetShortWordStatus();
+        SetDualMicStatus();
     }
 
     if (!StartDetection(uuid)) {
@@ -507,7 +605,7 @@ bool IntellVoiceServiceManager<T, E>::AddStartDetectionTask(int32_t uuid)
 
         INTELL_VOICE_LOG_INFO("begin to wait");
         while (T::GetParameter("audio_hal_status") != "true") {
-            ffrt::this_task::sleep_for(std::chrono::milliseconds(WAIT_AUDIO_HAL_INTERVAL));
+            ffrt::this_task::sleep_for(std::chrono::milliseconds(WAIT_INTERVAL));
             if (!QuerySwitchByUuid(uuid)) {
                 INTELL_VOICE_LOG_INFO("switch is off, uuid is %{public}d", uuid);
                 return;
@@ -580,6 +678,12 @@ int32_t IntellVoiceServiceManager<T, E>::HandleCloneUpdate(const std::string &wa
     const sptr<IRemoteObject> &object)
 {
     return TaskExecutor::AddSyncTask([this, wakeupInfo, object = std::move(object)]() -> int32_t {
+        if (serviceUnloading_) {
+            return -1;
+        }
+        if (IntellVoiceUtil::IsImplicitEnroll(wakeupInfo)) {
+            return E::ImplicitEnroll(wakeupInfo, object);
+        }
         return E::CloneUpdate(wakeupInfo, object);
     });
 }
@@ -619,19 +723,19 @@ void IntellVoiceServiceManager<T, E>::HandleServiceStop()
 }
 
 template<typename T, typename E>
-void IntellVoiceServiceManager<T, E>::HandleHeadsetHostDie()
+void IntellVoiceServiceManager<T, E>::HandleClearWakeupEngineCb()
 {
     TaskExecutor::AddSyncTask([this]() -> int32_t {
-        E::HeadsetHostDie();
+        E::ClearWakeupEngineCb();
         return 0;
     });
 }
 
 template<typename T, typename E>
-void IntellVoiceServiceManager<T, E>::HandleClearWakeupEngineCb()
+void IntellVoiceServiceManager<T, E>::HandleDeviceServiceDie(const std::string &serviceName)
 {
-    TaskExecutor::AddSyncTask([this]() -> int32_t {
-        E::ClearWakeupEngineCb();
+    TaskExecutor::AddSyncTask([this, serviceName]() -> int32_t {
+        E::DeviceServiceDie(serviceName);
         return 0;
     });
 }
@@ -713,11 +817,14 @@ void IntellVoiceServiceManager<T, E>::OnServiceStart(std::map<int32_t, std::func
     saChangeFuncMap[TELEPHONY_STATE_REGISTRY_SYS_ABILITY_ID] = [this](bool isAdded) {
         T::OnTelephonyStateRegistryServiceChange(isAdded);
     };
+#ifndef SUPPORT_RECORD_WAKEUP_CONCURRENT
     saChangeFuncMap[AUDIO_DISTRIBUTED_SERVICE_ID] = [this](bool isAdded) {
         T::OnAudioDistributedServiceChange(isAdded);
     };
+#endif
     saChangeFuncMap[AUDIO_POLICY_SERVICE_ID] = [this](bool isAdded) {
         T::OnAudioPolicyServiceChange(isAdded);
+        E::OnAudioPolicyServiceChange(isAdded);
     };
 #ifdef POWER_MANAGER_ENABLE
     saChangeFuncMap[POWER_MANAGER_SERVICE_ID] = [this](bool isAdded) {
@@ -736,6 +843,16 @@ void IntellVoiceServiceManager<T, E>::OnServiceStop()
 {
     T::OnServiceStop();
     E::OnServiceStop();
+}
+
+/**
+ * @brief 处理服务激活回调
+ * @description 当服务从idle状态重新激活时调用，重置卸载标志
+ */
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::OnServiceActive()
+{
+    serviceUnloading_ = false;
 }
 
 template<typename T, typename E>
@@ -771,43 +888,80 @@ bool IntellVoiceServiceManager<T, E>::DeregisterProxyDeathRecipient(IntellVoiceE
 }
 
 template<typename T, typename E>
+bool IntellVoiceServiceManager<T, E>::RegisterDeviceDeathRecipient(const std::string &serviceName,
+    const sptr<IRemoteObject> &object)
+{
+    return E::RegisterDeviceDeathRecipient(serviceName, object);
+}
+
+template<typename T, typename E>
 int32_t IntellVoiceServiceManager<T, E>::GetUploadFiles(int numMax, std::vector<UploadFilesFromHdi> &files)
 {
-    return E::GetUploadFiles(numMax, files);
+    int32_t ret = E::GetUploadFiles(numMax, files);
+    ScheduleDelayedUnload();
+    return ret;
+}
+
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::ScheduleDelayedUnload()
+{
+    if (!IsNeedToUnloadService()) {
+        return;
+    }
+
+    {
+        std::unique_lock<std::mutex> lock(delayUnloadMutex_);
+        lastCallTime_ = std::chrono::steady_clock::now();
+        if (!delayUnloadWaiting_) {
+            delayUnloadWaiting_ = true;
+            std::thread([this]() { this->DelayedUnloadService(); }).detach();
+        }
+    }
+    return;
+}
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::DelayedUnloadService()
+{
+    while (true) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(WAIT_INTERVAL));
+
+        std::unique_lock<std::mutex> lock(delayUnloadMutex_);
+
+        if (!IsNeedToUnloadService()) {
+            delayUnloadWaiting_ = false;
+            return;
+        }
+
+        auto now = std::chrono::steady_clock::now();
+        auto elapsed = now - lastCallTime_;
+
+        if (elapsed < std::chrono::milliseconds(WAIT_SWITCH_TIME)) {
+            continue;
+        }
+
+        delayUnloadWaiting_ = false;
+        lock.unlock();
+
+        INTELL_VOICE_LOG_WARN("timeout and switch is off, delay unloading service.");
+        TaskExecutor::AddAsyncTask([this]() { UnloadIntellVoiceService(); });
+        return;
+    }
 }
 
 template<typename T, typename E>
 int32_t IntellVoiceServiceManager<T, E>::EngineSetParameter(const std::string &keyValueList)
 {
     INTELL_VOICE_LOG_INFO("enter");
-    HistoryInfoMgr &historyInfoMgr = HistoryInfoMgr::GetInstance();
     std::map<std::string, std::string> kvpairs;
     IntellVoiceUtil::SplitStringToKVPair(keyValueList, kvpairs);
     for (auto it : kvpairs) {
-        if (it.first == std::string("Sensibility")) {
-            INTELL_VOICE_LOG_INFO("set Sensibility:%{public}s", it.second.c_str());
-            std::string sensibility = it.second;
-            historyInfoMgr.SetStringKVPair(KEY_SENSIBILITY, sensibility);
-            TaskExecutor::AddSyncTask([this, sensibility]() -> int32_t {
-                E::SetDspSensibility(sensibility);
-                return E::SetParameter(sensibility);
-            });
-        } else if (it.first == std::string("wakeup_bundle_name")) {
-            INTELL_VOICE_LOG_INFO("set wakeup bundle name:%{public}s", it.second.c_str());
-            historyInfoMgr.SetStringKVPair(KEY_WAKEUP_ENGINE_BUNDLE_NAME, it.second);
-        } else if (it.first == std::string("wakeup_ability_name")) {
-            INTELL_VOICE_LOG_INFO("set wakeup ability name:%{public}s", it.second.c_str());
-            historyInfoMgr.SetStringKVPair(KEY_WAKEUP_ENGINE_ABILITY_NAME, it.second);
-#ifdef ONLY_FIRST_STAGE
-        } else if (it.first == std::string("record_start")) {
-#ifndef FIRST_STAGE_ONESHOT_ENABLE
-            ResetSingleLevelWakeup(it.second);
-#else
-            std::string keyValue = it.first;
-            keyValue.append("=").append(it.second);
-            E::SetParameter(keyValue);
-#endif
-#endif
+        auto handler = handlerMap_.find(it.first);
+        if (handler != handlerMap_.end()) {
+            return handler->second(it.first, it.second);
+        }
+        auto voidHandler = voidHandlerMap_.find(it.first);
+        if (voidHandler != voidHandlerMap_.end()) {
+            voidHandler->second(it.first, it.second);
         } else {
             INTELL_VOICE_LOG_INFO("no need to process, key:%{public}s", it.first.c_str());
         }
@@ -865,7 +1019,35 @@ void IntellVoiceServiceManager<T, E>::ProcSingleLevelModel()
     INTELL_VOICE_LOG_INFO("enter");
     std::shared_ptr<uint8_t> buffer = nullptr;
     uint32_t size = 0;
-    if (!IntellVoiceUtil::ReadFile(SINGLE_LEVEL_MODEL_PATH, buffer, size)) {
+    std::string country = "";
+    std::string model_path = "";
+    country = HistoryInfoMgr::GetInstance().GetStringKVPair(KEY_COUNTRY_INFO_NAME);
+    INTELL_VOICE_LOG_INFO("current country is %{public}s", country.c_str());
+
+    if (country == "CN") {
+        model_path = SINGLE_LEVEL_MODEL_CN_PATH;
+    } else if (country == "AE") {
+        model_path = SINGLE_LEVEL_MODEL_AE_PATH;
+    } else if (country == "MY") {
+        model_path = SINGLE_LEVEL_MODEL_MY_PATH;
+    } else if (country == "MX") {
+        model_path = SINGLE_LEVEL_MODEL_MX_PATH;
+    } else if (country == "SA") {
+        model_path = SINGLE_LEVEL_MODEL_SA_PATH;
+    } else if (country == "GB") {
+        model_path = SINGLE_LEVEL_MODEL_GB_PATH;
+    } else if (country == "CL") {
+        model_path = SINGLE_LEVEL_MODEL_CL_PATH;
+    } else {
+        /* According to the model system archive path, select the default model path */
+        if (access(SINGLE_LEVEL_MODEL_CN_PATH.c_str(), F_OK) == 0) {
+            model_path = SINGLE_LEVEL_MODEL_CN_PATH;
+        } else {
+            model_path = SINGLE_LEVEL_MODEL_GB_PATH;
+        }
+    }
+
+    if (!IntellVoiceUtil::ReadFile(model_path, buffer, size)) {
         INTELL_VOICE_LOG_ERROR("read model failed!");
         return;
     }
@@ -934,6 +1116,153 @@ void IntellVoiceServiceManager<T, E>::HandleRecordStartInfoChange()
         notifyRecordStartInfoChange_ = false;
         HandleCloseWakeupSource(true);
     }).detach();
+}
+
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::HandleSensibility(const std::string &key, const std::string &value)
+{
+    INTELL_VOICE_LOG_INFO("set Sensibility:%{public}s", value.c_str());
+    HistoryInfoMgr::GetInstance().SetStringKVPair(KEY_SENSIBILITY, value);
+    TaskExecutor::AddSyncTask([this, key, value]() -> int32_t {
+        E::SetDspSensibility(value);
+        return E::SetParameter(key, value);
+    });
+}
+
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::HandleWakeupBundleName(const std::string &key, const std::string &value)
+{
+    INTELL_VOICE_LOG_INFO("set wakeup bundle name:%{public}s", value.c_str());
+    HistoryInfoMgr::GetInstance().SetStringKVPair(KEY_WAKEUP_ENGINE_BUNDLE_NAME, value);
+}
+
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::HandleCountryInfo(const std::string &key, const std::string &value)
+{
+    INTELL_VOICE_LOG_INFO("set country name:%{public}s", value.c_str());
+    std::string oldCountry = HistoryInfoMgr::GetInstance().GetStringKVPair(KEY_COUNTRY_INFO_NAME);
+    if (oldCountry == value) {
+        INTELL_VOICE_LOG_INFO("country is same, no need to update");
+        return;
+    }
+    HistoryInfoMgr::GetInstance().SetStringKVPair(KEY_COUNTRY_INFO_NAME, value);
+    /* When the country is set, the model is updated synchronously */
+    ProcSingleLevelModel();
+    HandleSwitchOn(true, VOICE_WAKEUP_MODEL_UUID, false);
+}
+
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::HandleWakeupAbilityName(const std::string &key, const std::string &value)
+{
+    INTELL_VOICE_LOG_INFO("set wakeup ability name:%{public}s", value.c_str());
+    HistoryInfoMgr::GetInstance().SetStringKVPair(KEY_WAKEUP_ENGINE_ABILITY_NAME, value);
+}
+
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::HandleRecordStart(const std::string &key, const std::string &value)
+{
+#ifdef ONLY_FIRST_STAGE
+#ifndef FIRST_STAGE_ONESHOT_ENABLE
+    ResetSingleLevelWakeup(value);
+#else
+    E::SetParameter(key, value);
+#endif
+#else
+    (void)key;
+    (void)value;
+#endif
+}
+
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::HandleWakeupScene(const std::string &key, const std::string &value)
+{
+    INTELL_VOICE_LOG_INFO("set wakeup scene %{public}s:%{public}s", key.c_str(), value.c_str());
+    E::SetParameter(key, value);
+    T::SetParameter(key, value);
+}
+
+template<typename T, typename E>
+int32_t IntellVoiceServiceManager<T, E>::HandleDataClear(const std::string &key, const std::string &value)
+{
+    INTELL_VOICE_LOG_INFO("clear data %{public}s:%{public}s", key.c_str(), value.c_str());
+    return TaskExecutor::AddSyncTask([this, key, value]() -> int32_t {
+        if (serviceUnloading_) {
+            return -1;
+        }
+        return E::SetParameter(key, value);
+    });
+}
+
+template<typename T, typename E>
+int32_t IntellVoiceServiceManager<T, E>::HandleEngineRelease(const std::string &key, const std::string &value)
+{
+    INTELL_VOICE_LOG_INFO("release cmd %{public}s:%{public}s", key.c_str(), value.c_str());
+    if (value == "implicit_enroll") {
+        TaskExecutor::AddAsyncTask([this]() { ReleaseEngine(INTELL_VOICE_IMPLICIT_ENROLL); });
+        INTELL_VOICE_LOG_INFO("implicit enroll release started");
+        return 0;
+    }
+    return -1;
+}
+
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::HandleTriggerParam(const std::string &key, const std::string &value)
+{
+    INTELL_VOICE_LOG_INFO("set trigger param to db %{public}s:%{public}s", key.c_str(), value.c_str());
+    HistoryInfoMgr::GetInstance().SetStringKVPair(key, value);
+    TaskExecutor::AddAsyncTask([this, key, value]() {
+        T::SetParameter(key, value);
+    }, "IntellVoiceServiceManager::SetTriggerParams", false);
+}
+
+#ifdef SUPPORT_RECORD_WAKEUP_CONCURRENT
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::HandleConcurrentWhiteList(const std::string &key, const std::string &value)
+{
+    INTELL_VOICE_LOG_INFO("v:%{public}s", value.c_str());
+    HistoryInfoMgr::GetInstance().SetStringKVPair("concurrentWhiteList", value);
+    bool isWhiteList = true;
+    bool isBlackList = false;
+    T::ClearConcurrentControlList(isWhiteList, isBlackList);
+}
+
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::HandleConcurrentBlackList(const std::string &key, const std::string &value)
+{
+    INTELL_VOICE_LOG_INFO("v:%{public}s", value.c_str());
+    HistoryInfoMgr::GetInstance().SetStringKVPair("concurrentBlackList", value);
+    bool isWhiteList = false;
+    bool isBlackList = true;
+    T::ClearConcurrentControlList(isWhiteList, isBlackList);
+}
+#endif
+
+template<typename T, typename E>
+void IntellVoiceServiceManager<T, E>::InitParameterHandlerMap()
+{
+    voidHandlerMap_ = {
+        {"Sensibility", [this](const std::string &k, const std::string &v) { HandleSensibility(k, v); }},
+        {"wakeup_bundle_name", [this](const std::string &k, const std::string &v) { HandleWakeupBundleName(k, v); }},
+        {"wakeup_ability_name", [this](const std::string &k, const std::string &v) { HandleWakeupAbilityName(k, v); }},
+        {"record_start", [this](const std::string &k, const std::string &v) { HandleRecordStart(k, v); }},
+        {"country", [this](const std::string &k, const std::string &v) { HandleCountryInfo(k, v); }},
+        {"wakeup_scene", [this](const std::string &k, const std::string &v) { HandleWakeupScene(k, v); }},
+#ifdef SUPPORT_RECORD_WAKEUP_CONCURRENT
+        {"concurrentWhiteList",
+            [this](const std::string &k, const std::string &v) { HandleConcurrentWhiteList(k, v); }},
+        {"concurrentBlackList",
+            [this](const std::string &k, const std::string &v) { HandleConcurrentBlackList(k, v); }},
+#endif
+    };
+    // add TRIGGER_PARAMS
+    for (const auto &param : TRIGGER_PARAMS) {
+        voidHandlerMap_[param] = [this](const std::string &k, const std::string &v) { HandleTriggerParam(k, v); };
+    }
+
+    handlerMap_ = {
+        {"clear_data", [this](const std::string &k, const std::string &v) { return HandleDataClear(k, v); }},
+        {"engine_release", [this](const std::string &k, const std::string &v) { return HandleEngineRelease(k, v); }},
+    };
 }
 
 template class IntellVoiceServiceManager<TriggerManagerType, EngineManagerType>;
